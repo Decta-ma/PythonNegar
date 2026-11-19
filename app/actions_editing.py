@@ -12,6 +12,10 @@ try:  # اجرا به‌صورت پکیج
     format_poetry_single_column,
     format_poetry_two_columns,
    )
+    from .number_converter import (
+    convert_document_to_persian,
+    convert_document_to_english,
+  )  
 except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     from app.glass_dropdown import GlassDropdown
     from app.data_loader import load_group
@@ -19,6 +23,10 @@ except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     from app.poetry_formatter import (
     format_poetry_single_column,
     format_poetry_two_columns,
+   )
+    from app.number_converter import (
+    convert_document_to_persian,
+    convert_document_to_english,
    )
 
 # ساختار منو: (عنوان, [زیرآیتم‌ها] یا None)
@@ -36,6 +44,8 @@ EDITING_HANDLERS = {
     ("ویراستاری مقدماتی","زبان معیار",): "standard_language_action",
     ("قالب شعر", "تک ستونه"): "poetry_single_column_action",
     ("قالب شعر", "دو ستونه"): "poetry_two_columns_action",
+    ("تبدیل اعداد", "به فارسی"): "convert_numbers_to_persian_action",
+    ("تبدیل اعداد", "به انگلیسی"): "convert_numbers_to_english_action",
 }
 
 
@@ -105,6 +115,51 @@ class EditingActions:
 
     def standard_language_action(self):
         self._run_rule_group("standard", "زبان معیار")
+    
+        # ------------------------------------------------------------
+    # تبدیل اعداد
+
+    def convert_numbers_to_persian_action(self):
+        self._run_number_conversion(
+            convert_document_to_persian,
+            "تبدیل اعداد به فارسی",
+        )
+
+    def convert_numbers_to_english_action(self):
+        self._run_number_conversion(
+            convert_document_to_english,
+            "تبدیل اعداد به انگلیسی",
+        )
+
+    def _run_number_conversion(self, converter, title):
+        """اجرای تبدیل اعداد در سند Word."""
+
+        try:
+            self.update_status(f"{title}...")
+
+            doc = self.engine.ensure_ready()
+
+            changed_count = converter(doc)
+
+            doc.Save()
+
+            self._restore_connected_status()
+
+            messagebox.showinfo(
+                title,
+                f"عملیات با موفقیت انجام شد.\n"
+                f"تعداد اعداد تبدیل‌شده: {changed_count}",
+                parent=self,
+            )
+
+        except Exception as e:
+            self._restore_connected_status()
+
+            messagebox.showerror(
+                "خطا در تبدیل اعداد",
+                str(e),
+                parent=self,
+            )
 
     def _run_rule_group(self, group, title):
         """قواعد یک گروه CSV را روی سند متصل اعمال می‌کند (الگوی مشترک آیتم‌ها)."""
