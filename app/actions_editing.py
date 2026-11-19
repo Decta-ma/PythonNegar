@@ -8,10 +8,18 @@ try:  # اجرا به‌صورت پکیج
     from .glass_dropdown import GlassDropdown
     from .data_loader import load_group
     from .replace_engine import apply_rules
+    from .poetry_formatter import (
+    format_poetry_single_column,
+    format_poetry_two_columns,
+   )
 except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     from app.glass_dropdown import GlassDropdown
     from app.data_loader import load_group
     from app.replace_engine import apply_rules
+    from app.poetry_formatter import (
+    format_poetry_single_column,
+    format_poetry_two_columns,
+   )
 
 # ساختار منو: (عنوان, [زیرآیتم‌ها] یا None)
 EDITING_MENU = [
@@ -26,6 +34,8 @@ EDITING_HANDLERS = {
     ("ویراستاری مقدماتی", "نشانه گذاری (سجاوندی)"): "punctuation_action",
     ("ویراستاری مقدماتی", "غلط املایی"): "spelling_action",
     ("ویراستاری مقدماتی","زبان معیار",): "standard_language_action",
+    ("قالب شعر", "تک ستونه"): "poetry_single_column_action",
+    ("قالب شعر", "دو ستونه"): "poetry_two_columns_action",
 }
 
 
@@ -124,3 +134,42 @@ class EditingActions:
             self.update_status("", is_connected=True, doc_name=self.engine.doc.Name)
         except Exception:
             pass
+        
+    
+
+    def poetry_single_column_action(self):
+        self._run_poetry_action(
+            format_poetry_single_column,
+            "قالب شعر - تک ستونه",
+        )
+
+    def poetry_two_columns_action(self):
+        self._run_poetry_action(
+            format_poetry_two_columns,
+            "قالب شعر - دو ستونه",
+        )
+
+    def _run_poetry_action(self, formatter, title):
+        """اجرای قالب‌بندی شعر روی متن انتخاب‌شده."""
+
+        try:
+            self.update_status(f"{title}...")
+
+            result = formatter(self.engine)
+
+            self._restore_connected_status()
+
+            messagebox.showinfo(
+                title,
+                result,
+                parent=self,
+            )
+
+        except Exception as e:
+            self._restore_connected_status()
+
+            messagebox.showerror(
+                "خطا در قالب‌بندی شعر",
+                str(e),
+                parent=self,
+            )
