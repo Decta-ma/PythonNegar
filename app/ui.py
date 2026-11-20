@@ -4,15 +4,18 @@ try:  # اجرا به‌صورت پکیج
     from .config import *  # noqa: F401,F403
     from .word_engine import WordEngine
     from .actions_document import DocumentActions
-    from .actions_editing import EditingActions 
+    from .actions_editing import EditingActions
+    from .actions_footnote import FootnoteActions
 except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     import os
     import sys
+
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from app.config import *  # noqa: F401,F403
     from app.word_engine import WordEngine
     from app.actions_document import DocumentActions
     from app.actions_editing import EditingActions
+    from app.actions_footnote import FootnoteActions
 
 import customtkinter as ctk
 import pythoncom
@@ -51,7 +54,7 @@ MENU_ITEMS = {
         ("تغییر نام سند", "تغییر نام از داخل برنامه", 1),
         ("وضعیت سند", "نمایش اطلاعات و وضعیت سند", 0),
         ("ذخیرهٔ نسخه", "مدیریت نسخه‌های سند", 0),
-        ("ویراستاری","ویرایش سند",1)
+        ("ویراستاری", "ویرایش سند", 1),
     ],
     "ابزارها": [
         ("تنظیمات", "تنظیمات برنامه", 0),
@@ -61,7 +64,12 @@ MENU_ITEMS = {
 }
 
 
-class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
+class LuxuryWordAssistant(
+    DocumentActions,
+    ctk.CTk,
+    EditingActions,
+    FootnoteActions,
+):
     def __init__(self):
         super().__init__()
         pythoncom.CoInitialize()
@@ -219,9 +227,7 @@ class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
     def show_tab(self, tab_name):
         # نمایش تب انتخاب‌شده
         for name, button in self.tab_buttons.items():
-            button.configure(
-                fg_color=self.blue if name == tab_name else "transparent"
-            )
+            button.configure(fg_color=self.blue if name == tab_name else "transparent")
 
         # پاک‌کردن زیرشاخه‌های تب قبلی
         for widget in self.content.winfo_children():
@@ -238,13 +244,18 @@ class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
         # کارت‌های گزینه‌ها
         cards = ctk.CTkFrame(self.content, fg_color="transparent")
         cards.pack(fill="both", expand=True, padx=12, pady=8)
-        self.card_widgets = {} 
+        self.card_widgets = {}
 
         commands = {
             "ساخت سند جدید": self.create_doc_action,
             "اتصال به سند باز": self.connect_doc_action,
             "تغییر نام سند": self.rename_doc_action,
-            "ویراستاری": lambda: self.editing_menu_action(self.card_widgets["ویراستاری"]),
+            "ویراستاری": lambda: self.editing_menu_action(
+                self.card_widgets["ویراستاری"]
+            ),
+            "درج پانویس(پاورقی)": lambda: self.footnote_menu_action(
+                self.card_widgets["درج پانویس(پاورقی)"]
+            ),
         }
 
         for index, (title, subtitle, enabled) in enumerate(MENU_ITEMS[tab_name]):
@@ -268,7 +279,7 @@ class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
                 sticky="nsew",
             )
             card.grid_propagate(False)
-            self.card_widgets[title] = card 
+            self.card_widgets[title] = card
 
             ctk.CTkLabel(
                 card,
@@ -305,8 +316,9 @@ class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
             else:
                 for child in card.winfo_children():
                     child.configure(cursor="arrow")
-            
-                        # دکمه تنظیمات اختصاصی کارت ویراستاری
+
+                    # دکمه تنظیمات اختصاصی کارت ویراستاری
+                    # دکمه تنظیمات اختصاصی کارت ویراستاری
             if title == "ویراستاری":
                 settings_button = ctk.CTkButton(
                     card,
@@ -329,11 +341,35 @@ class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
                     anchor="sw",
                 )
 
+            # دکمه تنظیمات اختصاصی کارت پانویس
+            if title == "درج پانویس(پاورقی)":
+                settings_button = ctk.CTkButton(
+                    card,
+                    text="↖",
+                    width=34,
+                    height=34,
+                    corner_radius=17,
+                    font=ctk.CTkFont(size=22, weight="bold"),
+                    fg_color=self.blue,
+                    hover_color=self.blue_hover,
+                    text_color=self.text,
+                    command=self.show_footnote_settings_modal,
+                )
+
+                settings_button.place(
+                    relx=0,
+                    rely=1,
+                    x=12,
+                    y=-10,
+                    anchor="sw",
+                )
+
         # سه ستون با اندازهٔ یکسان
         for column in range(3):
             cards.grid_columnconfigure(column, weight=1)
-    
+
         # ------------------------------------------------------------
+
     # تنظیمات ویراستاری
     # ------------------------------------------------------------
 
@@ -405,13 +441,9 @@ class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
         # قرار گرفتن پنجره در مرکز برنامه
         self.update_idletasks()
 
-        x = self.winfo_rootx() + (
-            self.winfo_width() - 460
-        ) // 2
+        x = self.winfo_rootx() + (self.winfo_width() - 460) // 2
 
-        y = self.winfo_rooty() + (
-            self.winfo_height() - 590
-        ) // 2
+        y = self.winfo_rooty() + (self.winfo_height() - 590) // 2
 
         modal.geometry(f"460x590+{x}+{y}")
 
@@ -604,3 +636,220 @@ class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
         poetry_menu.pack(fill="x")
 
         self.editing_settings_controls["poetry_style"] = poetry_menu
+    
+    
+    def show_footnote_settings_modal(self):
+        """نمایش پنجره تنظیمات درج پانویس."""
+
+        if (
+            hasattr(self, "footnote_settings_window")
+            and self.footnote_settings_window
+            and self.footnote_settings_window.winfo_exists()
+        ):
+            self.footnote_settings_window.focus()
+            return
+
+        if not hasattr(self, "footnote_settings"):
+            self.footnote_settings = {
+                "auto_keyboard": True,
+                "auto_direction": True,
+                "default_language": "فارسی",
+            }
+
+        settings = self.footnote_settings
+
+        window = ctk.CTkToplevel(self)
+        self.footnote_settings_window = window
+
+        window.title("تنظیمات پانویس")
+        window.geometry("440x390")
+        window.resizable(False, False)
+        window.configure(fg_color=self.bg)
+        window.transient(self)
+        window.grab_set()
+
+        window.update_idletasks()
+
+        x = self.winfo_rootx() + (self.winfo_width() - 440) // 2
+        y = self.winfo_rooty() + (self.winfo_height() - 390) // 2
+        window.geometry(f"440x390+{x}+{y}")
+
+        def close_window():
+            window.destroy()
+            self.footnote_settings_window = None
+
+        window.protocol("WM_DELETE_WINDOW", close_window)
+
+        panel = ctk.CTkFrame(
+            window,
+            fg_color=self.panel,
+            corner_radius=16,
+            border_width=1,
+            border_color=self.line,
+        )
+        panel.pack(fill="both", expand=True, padx=14, pady=14)
+
+        # سربرگ
+        header = ctk.CTkFrame(
+            panel,
+            fg_color="transparent",
+        )
+        header.pack(fill="x", padx=18, pady=(16, 10))
+
+        close_button = ctk.CTkButton(
+            header,
+            text="✕",
+            width=30,
+            height=30,
+            corner_radius=15,
+            fg_color="transparent",
+            hover_color=self.line,
+            text_color=self.muted,
+            command=close_window,
+        )
+        close_button.pack(side="left")
+
+        title = ctk.CTkLabel(
+            header,
+            text="تنظیمات درج پانویس",
+            font=ctk.CTkFont(
+                family="Vazirmatn",
+                size=16,
+                weight="bold",
+            ),
+            text_color=self.text,
+        )
+        title.pack(side="right")
+
+        ctk.CTkFrame(
+            panel,
+            height=2,
+            fg_color=self.blue,
+        ).pack(fill="x", padx=18, pady=(0, 14))
+
+        # توضیحات
+        description = ctk.CTkLabel(
+            panel,
+            text="تنظیم نحوه درج و نگارش پانویس‌ها",
+            font=ctk.CTkFont(
+                family="Vazirmatn",
+                size=11,
+            ),
+            text_color=self.muted,
+            anchor="e",
+        )
+        description.pack(fill="x", padx=22, pady=(0, 12))
+
+        # تنظیمات تغییر زبان و جهت نوشتار
+        controls = {}
+
+        def add_switch(text, key):
+            row = ctk.CTkFrame(
+                panel,
+                fg_color="transparent",
+                height=42,
+            )
+            row.pack(fill="x", padx=20, pady=3)
+            row.pack_propagate(False)
+
+            label = ctk.CTkLabel(
+                row,
+                text=text,
+                font=ctk.CTkFont(
+                    family="Vazirmatn",
+                    size=11,
+                ),
+                text_color=self.text,
+                anchor="e",
+            )
+            label.pack(side="right", fill="both", expand=True, padx=8)
+
+            switch = ctk.CTkSwitch(
+                row,
+                text="",
+                width=42,
+                progress_color=self.blue,
+                button_color="#F8FAFC",
+                button_hover_color="#CBD5E1",
+                fg_color=self.line,
+                onvalue=True,
+                offvalue=False,
+            )
+            switch.pack(side="left", padx=8)
+
+            if settings.get(key, True):
+                switch.select()
+            else:
+                switch.deselect()
+
+            controls[key] = switch
+
+        add_switch(
+            "تغییر خودکار زبان کیبورد",
+            "auto_keyboard",
+        )
+
+        add_switch(
+            "تنظیم خودکار جهت نوشتار",
+            "auto_direction",
+        )
+
+        # زبان پیش‌فرض
+        language_row = ctk.CTkFrame(
+            panel,
+            fg_color="transparent",
+            height=48,
+        )
+        language_row.pack(fill="x", padx=20, pady=(8, 4))
+        language_row.pack_propagate(False)
+
+        ctk.CTkLabel(
+            language_row,
+            text="زبان پیش‌فرض پانویس",
+            font=ctk.CTkFont(
+                family="Vazirmatn",
+                size=11,
+            ),
+            text_color=self.text,
+        ).pack(side="right", padx=8)
+
+        language_menu = ctk.CTkOptionMenu(
+            language_row,
+            values=["فارسی", "انگلیسی"],
+            width=120,
+            height=32,
+            fg_color=self.blue,
+            button_color=self.blue,
+            button_hover_color=self.blue_hover,
+            font=ctk.CTkFont(
+                family="Vazirmatn",
+                size=11,
+            ),
+        )
+        language_menu.set(settings.get("default_language", "فارسی"))
+        language_menu.pack(side="left", padx=8)
+
+        # ذخیره تنظیمات
+        def save_settings():
+            settings["auto_keyboard"] = controls["auto_keyboard"].get()
+            settings["auto_direction"] = controls["auto_direction"].get()
+            settings["default_language"] = language_menu.get()
+
+            close_window()
+
+        save_button = ctk.CTkButton(
+            panel,
+            text="ذخیره تنظیمات",
+            height=38,
+            corner_radius=10,
+            fg_color=self.blue,
+            hover_color=self.blue_hover,
+            text_color=self.text,
+            font=ctk.CTkFont(
+                family="Vazirmatn",
+                size=12,
+                weight="bold",
+            ),
+            command=save_settings,
+        )
+        save_button.pack(fill="x", padx=22, pady=(18, 16))
