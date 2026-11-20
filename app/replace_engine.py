@@ -45,31 +45,63 @@ def _find_args(rule):
     )
 
 
-def _count_matches(doc, rule):
-    """شمارش مواردی که قاعده پیدا می‌کند (بدون تغییر دادن سند)."""
-    rng = doc.Content
+def _count_matches(doc, rule, target_range=None):
+    """شمارش مواردی که قاعده پیدا می‌کند."""
+
+    rng = (
+        target_range.Duplicate
+        if target_range is not None
+        else doc.Content.Duplicate
+    )
+
     rng.Find.ClearFormatting()
-    end = doc.Content.End
+
+    end = rng.End
     count = 0
+
     while count < MAX_PER_RULE:
         if not rng.Find.Execute(**_find_args(rule)):
             break
+
         count += 1
-        rng.Collapse(WD_COLLAPSE_END)     # ادامه از انتهای مورد پیداشده
+
+        rng.Collapse(WD_COLLAPSE_END)
+
         if rng.Start >= end:
             break
+
         rng.End = end
+
     return count
 
 
-def _replace_all(doc, rule):
-    rng = doc.Content
+def _replace_all(doc, rule, target_range=None):
+    """جایگزینی همه موارد در محدوده مشخص یا کل سند."""
+
+    rng = (
+        target_range.Duplicate
+        if target_range is not None
+        else doc.Content.Duplicate
+    )
+
     rng.Find.ClearFormatting()
     rng.Find.Replacement.ClearFormatting()
-    rng.Find.Execute(**_find_args(rule), ReplaceWith=rule.replace, Replace=WD_REPLACE_ALL)
+
+    rng.Find.Execute(
+        **_find_args(rule),
+        ReplaceWith=rule.replace,
+        Replace=WD_REPLACE_ALL,
+    )
 
 
-def apply_rules(engine, rules, undo_name="ویراستاری", progress=None, save=True):
+def apply_rules(
+    engine,
+    rules,
+    undo_name="ویراستاری",
+    progress=None,
+    save=True,
+    target_range=None,
+):
     """قواعد را به ترتیب روی سند متصل اعمال می‌کند و ReplaceReport برمی‌گرداند.
 
     progress(done, total): پس از هر قاعده صدا زده می‌شود (برای نوار وضعیت).
@@ -98,23 +130,35 @@ def apply_rules(engine, rules, undo_name="ویراستاری", progress=None, sa
         old_updating = None
 
     current = None
+    
     try:
         for index, rule in enumerate(rules, start=1):
             current = rule
-            if rule.count:
-                matches = _count_matches(doc, rule)
-                if matches:                       # قاعدهٔ بی‌تطابق رد می‌شود (سریع‌تر)
-                    _replace_all(doc, rule)
-                    report.total += matches
-                    report.details.append((rule, matches))
-            else:
-                _replace_all(doc, rule)
+
+            matches = _count_matches(
+                doc,
+                rule,
+                target_range,
+            )
+
+            if matches:
+                _replace_all(
+                    doc,
+                    rule,
+                    target_range,
+                )
+
+                report.total += matches
+                report.details.append((rule, matches))
+
             report.rules_run = index
+
             if progress:
                 progress(index, total_rules)
 
         if report.total > 0 and save:
             doc.Save()
+            
     except Exception as exc:
         where = f"«{current.search.strip()}»" if current is not None else ""
         raise RuntimeError(f"خطا هنگام اعمال قاعدهٔ {where}:\n{exc}") from exc

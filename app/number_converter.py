@@ -58,10 +58,16 @@ def _iter_story_ranges(doc):
                 break
 
 
-def _convert_document(doc, translation_map):
-    """تبدیل اعداد در تمام بخش‌های قابل پیمایش سند."""
+def _convert_document(doc, translation_map, target_range=None):
+    """تبدیل اعداد در محدوده مشخص یا تمام بخش‌های سند."""
 
     total_changed = 0
+
+    if target_range is not None:
+        return _replace_digits_in_range(
+            target_range,
+            translation_map,
+        )
 
     for rng in _iter_story_ranges(doc):
         total_changed += _replace_digits_in_range(
@@ -72,7 +78,7 @@ def _convert_document(doc, translation_map):
     return total_changed
 
 
-def convert_document_to_persian(doc):
+def convert_document_to_persian(doc, target_range=None):
     """تبدیل اعداد انگلیسی و عربی به اعداد فارسی."""
 
     translation_map = {}
@@ -91,10 +97,14 @@ def convert_document_to_persian(doc):
         )
     )
 
-    return _convert_document(doc, translation_map)
+    return _convert_document(
+        doc,
+        translation_map,
+        target_range,
+    )
 
 
-def convert_document_to_english(doc):
+def convert_document_to_english(doc, target_range=None):
     """تبدیل اعداد فارسی و عربی به اعداد انگلیسی."""
 
     translation_map = {}
@@ -113,4 +123,8 @@ def convert_document_to_english(doc):
         )
     )
 
-    return _convert_document(doc, translation_map)
+    return _convert_document(
+        doc,
+        translation_map,
+        target_range,
+    )

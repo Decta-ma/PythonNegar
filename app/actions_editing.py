@@ -102,6 +102,40 @@ class EditingActions:
             "«" + " ← ".join(path) + "»\nاین قابلیت هنوز پیاده‌سازی نشده است.",
             parent=self,
         )
+        
+        # ------------------------------------------------------------
+    # مدیریت محدوده اعمال عملیات ویراستاری
+
+    def _get_editing_range(self):
+        """
+        مشخص می‌کند عملیات ویراستاری روی انتخاب کاربر انجام شود
+        یا روی کل سند.
+
+        خروجی:
+            (doc, target_range)
+        """
+
+        doc = self.engine.ensure_ready()
+        selection = self.engine.word.Selection
+        selected_range = selection.Range.Duplicate
+
+        # اگر کاربر متنی انتخاب کرده باشد
+        if selected_range.Start != selected_range.End:
+            return doc, selected_range
+
+        # اگر انتخابی وجود نداشته باشد
+        apply_to_document = messagebox.askyesno(
+            "اعمال تغییرات",
+            "شما هیچ موردی را برای تغییر انتخاب نکرده‌اید، "
+            "آیا می‌خواهید این تغییر روی کل سند اعمال شود؟",
+            parent=self,
+        )
+
+        if not apply_to_document:
+            return None, None
+
+        # کل محتوای اصلی سند
+        return doc, doc.Content.Duplicate
 
     # ------------------------------------------------------------ قواعد CSV
     def half_space_action(self):
@@ -132,14 +166,22 @@ class EditingActions:
         )
 
     def _run_number_conversion(self, converter, title):
-        """اجرای تبدیل اعداد در سند Word."""
+        """اجرای تبدیل اعداد روی انتخاب کاربر یا کل سند."""
 
         try:
             self.update_status(f"{title}...")
 
-            doc = self.engine.ensure_ready()
+            doc, target_range = self._get_editing_range()
 
-            changed_count = converter(doc)
+            # کاربر گزینه «خیر» را انتخاب کرده است.
+            if doc is None:
+                self._restore_connected_status()
+                return
+
+            changed_count = converter(
+                doc,
+                target_range,
+            )
 
             doc.Save()
 
@@ -160,26 +202,57 @@ class EditingActions:
                 str(e),
                 parent=self,
             )
-
+            
     def _run_rule_group(self, group, title):
-        """قواعد یک گروه CSV را روی سند متصل اعمال می‌کند (الگوی مشترک آیتم‌ها)."""
+        """اجرای قواعد CSV روی انتخاب کاربر یا کل سند."""
+
         if getattr(self, "_rules_running", False):
             return
+
         self._rules_running = True
+
         try:
+            doc, target_range = self._get_editing_range()
+
+            # کاربر «خیر» را انتخاب کرده است.
+            if doc is None:
+                self._restore_connected_status()
+                return
+
             ruleset = load_group(group)
 
             def progress(done, total):
                 if done % 3 == 0 or done == total:
-                    self.update_status(f"{title}… {done} از {total}")
+                    self.update_status(
+                        f"{title}… {done} از {total}"
+                    )
                     self.update_idletasks()
 
-            report = apply_rules(self.engine, ruleset.rules, undo_name=title, progress=progress)
+            report = apply_rules(
+                self.engine,
+                ruleset.rules,
+                undo_name=title,
+                progress=progress,
+                target_range=target_range,
+            )
+
             self._restore_connected_status()
-            messagebox.showinfo(title, report.message(title), parent=self)
+
+            messagebox.showinfo(
+                title,
+                report.message(title),
+                parent=self,
+            )
+
         except Exception as e:
             self._restore_connected_status()
-            messagebox.showerror("خطا", str(e), parent=self)
+
+            messagebox.showerror(
+                "خطا",
+                str(e),
+                parent=self,
+            )
+
         finally:
             self._rules_running = False
 
@@ -204,13 +277,24 @@ class EditingActions:
             "قالب شعر - دو ستونه",
         )
 
+   
     def _run_poetry_action(self, formatter, title):
-        """اجرای قالب‌بندی شعر روی متن انتخاب‌شده."""
+        """اجرای قالب‌بندی شعر روی انتخاب کاربر یا کل سند."""
 
         try:
             self.update_status(f"{title}...")
 
-            result = formatter(self.engine)
+            doc, target_range = self._get_editing_range()
+
+            # کاربر گزینه «خیر» را انتخاب کرده است.
+            if doc is None:
+                self._restore_connected_status()
+                return
+
+            result = formatter(
+                self.engine,
+                target_range,
+            )
 
             self._restore_connected_status()
 
@@ -228,3 +312,4 @@ class EditingActions:
                 str(e),
                 parent=self,
             )
+

@@ -33,16 +33,20 @@ def _get_paragraphs_in_range(doc, selected_range):
     return paragraphs
 
 
-def _get_selected_poetry(engine):
-    """دریافت و اعتبارسنجی مصراع‌های انتخاب‌شده."""
+
+def _get_selected_poetry(engine, target_range=None):
+    """دریافت و اعتبارسنجی مصراع‌های محدوده موردنظر."""
 
     doc = engine.ensure_ready()
     word = engine.word
 
-    selected_range = word.Selection.Range.Duplicate
+    if target_range is None:
+        selected_range = word.Selection.Range.Duplicate
+    else:
+        selected_range = target_range.Duplicate
 
     if selected_range.Start == selected_range.End:
-        raise RuntimeError("ابتدا متن شعر را در Word انتخاب کنید.")
+        raise RuntimeError("هیچ متنی برای قالب‌بندی وجود ندارد.")
 
     selected_start = selected_range.Start
     selected_end = selected_range.End
@@ -50,7 +54,7 @@ def _get_selected_poetry(engine):
     paragraphs = _get_paragraphs_in_range(doc, selected_range)
 
     if not paragraphs:
-        raise RuntimeError("هیچ پاراگرافی در محدوده انتخاب‌شده پیدا نشد.")
+        raise RuntimeError("هیچ پاراگرافی در محدوده موردنظر پیدا نشد.")
 
     # بررسی شروع انتخاب از ابتدای پاراگراف
     first_range = paragraphs[0].Range
@@ -91,7 +95,7 @@ def _get_selected_poetry(engine):
             texts.append(hemistich)
 
     if len(texts) < 2:
-        raise RuntimeError("حداقل دو مصراع باید انتخاب کنید.")
+        raise RuntimeError("حداقل دو مصراع باید وجود داشته باشد.")
 
     if len(texts) % 2 != 0:
         raise RuntimeError(
@@ -100,6 +104,7 @@ def _get_selected_poetry(engine):
         )
 
     return doc, selected_range, paragraphs, texts
+
 
 
 
@@ -143,12 +148,12 @@ def _start_undo_record(word, title):
         return None
 
 
-def format_poetry_single_column(engine):
+def format_poetry_single_column(engine,target_range=None):
     """قرار دادن دو مصراع هر بیت زیر یکدیگر."""
 
     doc, selected_range, old_paragraphs, texts = (
-        _get_selected_poetry(engine)
-    )
+    _get_selected_poetry(engine, target_range)
+   )
 
     word = engine.word
     old_screen_updating = word.ScreenUpdating
@@ -204,11 +209,11 @@ def format_poetry_single_column(engine):
         word.ScreenUpdating = old_screen_updating
 
 
-def format_poetry_two_columns(engine):
+def format_poetry_two_columns(engine,target_range=None):
     """قرار دادن دو مصراع هر بیت در دو ستون روبه‌روی هم."""
 
     doc, selected_range, old_paragraphs, texts = (
-        _get_selected_poetry(engine)
+       _get_selected_poetry(engine, target_range)
     )
 
     word = engine.word
