@@ -4,6 +4,8 @@ Change a number here, build again, and the .dotm changes.
 Units: margins in cm, font sizes in pt, spacing in pt, indents in cm.
 """
 
+from ._parts import field, hint
+
 EBTEKAR = {
     "id": "Ebtekar",
     "name": "نشریه علمی ابتکار و خلاقیت در علوم انسانی",
@@ -34,6 +36,81 @@ EBTEKAR = {
         "size": 10,
         "border": True,
     },
+
+
+    # ---- starting content of a new article (same order as Journals.xml) ----
+    # Each item is (style id, parts, options). parts = text, a field/hint, or a list of them.
+    "skeleton": [
+        # 1_TitleAndAuthors: journal info table, then title and authors
+        {"table": {
+            "widths_cm": [0.45, 11.93],
+            "cells": [
+                [],
+                [
+                    ("Header", [{"text": "نشریه علمی "},
+                                {"text": "ابتکار و خلاقیت در علوم انسانی",
+                                 "bold": True, "italic": True}]),
+                    ("Header", ["دورة ", field("JournalVolume", "Volume"),
+                                " ، شمارة ", field("JournalIssue", "Issue"),
+                                " ، ", field("JournalSeason", "Season"), " ",
+                                field("JournalYear", "Year"),
+                                "، صص. مقاله پژوهشی"]),
+                    ("Header", ["تاریخ دریافت: ",
+                                field("JournalReceivedDate", "Received date", "//")],
+                     {"border_top": True, "before": 6}),
+                    ("Header", ["تاریخ پذیرش: ",
+                                field("JournalAcceptedDate", "Accepted date", "//")]),
+                ],
+            ],
+        }},
+        ("BodyNegar", ""),
+        ("TitleNegar", hint("TitleFa", "عنوان فارسی مقاله", "عنوان مقاله")),
+        ("TitleNegarAuthor", {"text": "نام نویسندگان", "bookmark": "AuthorNamesFa"}),
+
+        # 2_Abstract
+        ("AbstractHeadNegar", "چکیده"),
+        ("AbstractBodyNegar", hint("AbstractFa", "چکیده فارسی",
+                                   "متن چکیده را اینجا بنویسید.", block=True)),
+        ("KeywordsNegar", [{"text": "واژه‌های کلیدی: ", "bold": True},
+                           hint("KeywordsFa", "واژه‌های کلیدی",
+                                "کلیدواژه‌ها را با ویرگول از هم جدا کنید.")]),
+
+        # 3 to 9: heading + guide text
+        ("TitleNegar1", "مقدمه"),
+        ("BodyNegar", hint("G_Ebtekar_Guide_Introduction", "راهنمای مقدمه",
+            "مقدمه: بیان مسئله، ضرورت و اهمیت پژوهش و هدف یا پرسش‌های اصلی مقاله را بنویسید.")),
+        ("TitleNegar1", "مبانی نظری و توسعه فرضیه‌ها"),
+        ("BodyNegar", hint("G_Ebtekar_Guide_TheoreticalBackground", "راهنمای مبانی نظری",
+            "مبانی نظری، پیشینهٔ پژوهش و منطق توسعهٔ فرضیه‌ها را به‌صورت دسته‌بندی‌شده و با ارجاع به منابع ارائه کنید.")),
+        ("TitleNegar1", "روش‌شناسی پژوهش"),
+        ("BodyNegar", hint("G_Ebtekar_Guide_Methodology", "راهنمای روش‌شناسی",
+            "نوع پژوهش، جامعه و نمونه، ابزار گردآوری داده و روایی و پایایی آن، و روش تحلیل داده‌ها را شرح دهید.")),
+        ("TitleNegar1", "یافته‌های پژوهش"),
+        ("BodyNegar", hint("G_Ebtekar_Guide_Findings", "راهنمای یافته‌ها",
+            "یافته‌ها را متناسب با اهداف و پرسش‌های پژوهش و با استفاده به‌جا از جدول و شکل ارائه کنید.")),
+        ("TitleNegar1", "بحث و نتیجه‌گیری"),
+        ("BodyNegar", hint("G_Ebtekar_Guide_Discussion", "راهنمای بحث و نتیجه‌گیری",
+            "یافته‌ها را با پژوهش‌های پیشین مقایسه کنید، سپس نتیجه‌گیری و پیشنهادهای مبتنی بر یافته‌ها را بنویسید.")),
+        ("TitleNegar1", "تقدیر و تشکر"),
+        ("BodyNegar", hint("G_Ebtekar_Guide_Acknowledgment", "راهنمای تقدیر و تشکر",
+            "در صورت لزوم از افراد یا نهادهای حامی تقدیر کنید؛ اگر موردی ندارید، این بخش را حذف کنید.")),
+        ("TitleNegar1", "منابع"),
+        ("RefNegar", hint("G_Ebtekar_Guide_References", "راهنمای منابع",
+            "ابتدا منابع فارسی و سپس منابع لاتین را به ترتیب الفبا بنویسید (قالب APA). شماره‌گذاری نکنید.")),
+
+        # 10_EnglishAbstract: new page, left-to-right
+        ("TitleNegar", hint("TitleEn", "English title", "Article Title"),
+         {"rtl": False, "page_break": True}),
+        ("TitleNegarAuthor", {"text": "Author Names", "bookmark": "AuthorNamesEn"},
+         {"rtl": False}),
+        ("AbstractHeadNegar", "Abstract", {"rtl": False}),
+        ("AbstractBodyNegar", hint("AbstractEn", "English abstract",
+                                   "Type the abstract here.", block=True), {"rtl": False}),
+        ("KeywordsNegar", [{"text": "Keywords: ", "bold": True},
+                           hint("KeywordsEn", "English keywords",
+                                "Separate keywords with commas.")],
+         {"rtl": False, "align": "left"}),
+    ],
 
     # ---- styles ----
     # based_on / next are style ids. Missing keys = inherit from based_on.

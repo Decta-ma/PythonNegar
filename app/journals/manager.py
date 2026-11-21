@@ -34,34 +34,24 @@ def get_journals():
 
         preferred = getattr(module, "JOURNAL", None)
 
-        candidates = (
-            [preferred]
-            if _is_journal_config(preferred)
-            else []
-        )
-
-        if not candidates:
+        if _is_journal_config(preferred):
+            candidates = [preferred]
+        else:
             candidates = [
                 value
                 for name, value in vars(module).items()
-                if name.isupper()
-                and _is_journal_config(value)
+                if name.isupper() and _is_journal_config(value)
             ]
 
-            for config in candidates:
-                journals[str(config["id"])] = config
+        for config in candidates:
+            journals[str(config["id"])] = config
 
-        return sorted(
-            journals.values(),
-            key=lambda item : item["name"].casefold() 
-        )
-
-    def get_journal(journal_id):
-
-        for journal in get_journals():
-            if str(journal["id"]) == str(journal_id):
-                return journal
-
-        raise KeyError(f"ژرنالی پیدا نشد: {journal_id}")
+    return sorted(journals.values(), key=lambda item: item["name"].casefold())
 
 
+def get_journal(journal_id):
+    for journal in get_journals():
+        if str(journal["id"]) == str(journal_id):
+            return journal
+
+    raise KeyError(f"Journal not found: {journal_id}")

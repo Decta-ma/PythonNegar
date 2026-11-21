@@ -6,8 +6,9 @@ Usage:
     build_template(EBTEKAR, "Ebtekar.dotm")
 """
 
+import itertools
 import zipfile
-from xml.sax.saxutils import escape
+from xml.sax.saxutils import escape, quoteattr
 
 W_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -99,6 +100,9 @@ def styles_xml(cfg):
         '<w:style w:type="paragraph" w:styleId="Header"><w:name w:val="header"/>'
         '<w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="120"/></w:pPr>'
         '<w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:style>'
+        '<w:style w:type="character" w:styleId="PlaceholderText">'
+        '<w:name w:val="Placeholder Text"/><w:uiPriority w:val="99"/><w:semiHidden/>'
+        '<w:rPr><w:color w:val="808080"/></w:rPr></w:style>'
         '<w:style w:type="paragraph" w:styleId="Footer"><w:name w:val="footer"/>'
         '<w:basedOn w:val="Normal"/><w:rPr><w:sz w:val="20"/><w:szCs w:val="20"/>'
         "</w:rPr></w:style>"
@@ -146,6 +150,107 @@ def footer_xml(cfg, kind):
 
 
 # ---------------------------------------------------------------- document
+def run_xml(text, rtl=True, bold=False, italic=False, placeholder=False):
+    """One text run. rtl=True marks the text as right-to-left (Persian)."""
+    rpr = ""
+    if placeholder:
+        rpr += '<w:rStyle w:val="PlaceholderText"/>'
+    if bold:
+        rpr += "<w:b/><w:bCs/>"
+    if italic:
+        rpr += "<w:i/><w:iCs/>"
+    if rtl:
+        rpr += "<w:rtl/>"
+    rpr = f"<w:rPr>{rpr}</w:rPr>" if rpr else ""
+    return f'<w:r>{rpr}<w:t xml:space="preserve">{escape(text)}</w:t></w:r>'
+
+
+def sdt_pr(c, rtl, ids):
+    """Properties of a content control: alias, tag, id, lock, placeholder."""
+    pr = "<w:rPr><w:rtl/></w:rPr>" if rtl else ""
+    pr += (f'<w:alias w:val={quoteattr(c["alias"])}/><w:tag w:val={quoteattr(c["tag"])}/>'
+           f'<w:id w:val="{next(ids)}"/>')
+    if c.get("locked"):
+        pr += '<w:lock w:val="sdtLocked"/>'
+    pr += "<w:showingPlcHdr/>" if c.get("placeholder", True) else "<w:text/>"
+    return f"<w:sdtPr>{pr}</w:sdtPr>"
+
+
+def control_xml(c, rtl, ids):
+    """An inline content control (inside a paragraph)."""
+    run = run_xml(c["text"], rtl, placeholder=c.get("placeholder", True))
+    return f"<w:sdt>{sdt_pr(c, rtl, ids)}<w:sdtContent>{run}</w:sdtContent></w:sdt>"
+
+
+def paragraph_xml(style_id, parts, opts, ids):
+    """One paragraph. parts = text, a dict, or a list of them."""
+    opts = opts or {}
+    rtl = opts.get("rtl", True)
+    if isinstance(parts, (str, dict)):
+        parts = [parts]
+
+    ppr = f'<w:pStyle w:val="{style_id}"/>'
+    if opts.get("page_break"):
+        ppr += "<w:pageBreakBefore/>"
+    if opts.get("border_top"):
+        ppr += ('<w:pBdr><w:top w:val="single" w:sz="4" w:space="1" '
+                'w:color="auto"/></w:pBdr>')
+    if rtl:
+        ppr += "<w:bidi/>"
+    if "before" in opts:
+        ppr += f'<w:spacing w:before="{pt_to_twips(opts["before"])}"/>'
+    if "align" in opts:
+        ppr += f'<w:jc w:val="{ALIGN[opts["align"]]}"/>'
+
+    # a block control wraps the whole paragraph
+    if len(parts) == 1 and isinstance(parts[0], dict) and parts[0].get("block"):
+        c = parts[0]
+        run = run_xml(c["text"], rtl, placeholder=True)
+        return (f"<w:sdt>{sdt_pr(c, rtl, ids)}<w:sdtContent>"
+                f"<w:p><w:pPr>{ppr}</w:pPr>{run}</w:p></w:sdtContent></w:sdt>")
+
+    out = ""
+    for part in parts:
+        if isinstance(part, str):
+            out += run_xml(part, rtl) if part else ""
+        elif "tag" in part:
+            out += control_xml(part, rtl, ids)
+        else:  # plain text with options: bold, italic, bookmark
+            run = run_xml(part["text"], rtl, part.get("bold"), part.get("italic"))
+            if "bookmark" in part:
+                n = next(ids)
+                run = (f'<w:bookmarkStart w:id="{n}" w:name="{part["bookmark"]}"/>'
+                       f'{run}<w:bookmarkEnd w:id="{n}"/>')
+            out += run
+    return f"<w:p><w:pPr>{ppr}</w:pPr>{out}</w:p>"
+
+
+def table_xml(t, ids):
+    """A borderless layout table. cells = one list of paragraphs per column."""
+    widths = [cm_to_twips(w) for w in t["widths_cm"]]
+    grid = "".join(f'<w:gridCol w:w="{w}"/>' for w in widths)
+    cells = ""
+    for w, paragraphs in zip(widths, t["cells"]):
+        content = "".join(paragraph_xml(*item[:2], item[2] if len(item) > 2 else None, ids)
+                          for item in paragraphs) or "<w:p/>"
+        cells += f'<w:tc><w:tcPr><w:tcW w:w="{w}" w:type="dxa"/></w:tcPr>{content}</w:tc>'
+    return ('<w:tbl><w:tblPr><w:bidiVisual/><w:tblW w:w="0" w:type="auto"/>'
+            '<w:tblCellMar><w:left w:w="10" w:type="dxa"/>'
+            '<w:right w:w="10" w:type="dxa"/></w:tblCellMar></w:tblPr>'
+            f'<w:tblGrid>{grid}</w:tblGrid><w:tr>{cells}</w:tr></w:tbl>')
+
+
+def skeleton_xml(cfg):
+    ids = itertools.count(1700001)  # every control needs its own number
+    out = ""
+    for item in cfg.get("skeleton", []):
+        if isinstance(item, dict):
+            out += table_xml(item["table"], ids)
+        else:
+            out += paragraph_xml(item[0], item[1], item[2] if len(item) > 2 else None, ids)
+    return out
+
+
 def document_xml(cfg):
     pg = cfg["page"]
     refs = ('<w:headerReference w:type="even" r:id="rId11"/>'
@@ -167,15 +272,19 @@ def document_xml(cfg):
         + ("<w:bidi/>" if pg["rtl"] else "")
         + "</w:sectPr>"
     )
-    body = ('<w:p><w:pPr><w:pStyle w:val="BodyNegar"/><w:bidi/>'
-            '<w:ind w:firstLine="0"/></w:pPr></w:p>')
+    body = skeleton_xml(cfg)
+    if not body:  # no skeleton: one empty paragraph
+        body = ('<w:p><w:pPr><w:pStyle w:val="BodyNegar"/><w:bidi/>'
+                '<w:ind w:firstLine="0"/></w:pPr></w:p>')
     return f"{XML_HEAD}<w:document {ROOT_ATTRS}><w:body>{body}{sect}</w:body></w:document>"
 
 
 def settings_xml(cfg):
     odd_even = "<w:evenAndOddHeaders/>" if cfg["page"]["even_odd_headers"] else ""
+    compat = ('<w:compat><w:compatSetting w:name="compatibilityMode" '
+              'w:uri="http://schemas.microsoft.com/office/word" w:val="15"/></w:compat>')
     return (f'{XML_HEAD}<w:settings {ROOT_ATTRS}><w:zoom w:percent="100"/>'
-            f'{odd_even}<w:defaultTabStop w:val="720"/></w:settings>')
+            f'<w:defaultTabStop w:val="720"/>{odd_even}{compat}</w:settings>')
 
 
 # ---------------------------------------------------------------- package
