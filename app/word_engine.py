@@ -79,7 +79,7 @@ class WordEngine:
 
         return payload["doc_id"]
 
-    def create_new_signed_doc(self, file_path: str):
+    def create_new_signed_doc(self, file_path: str, template_path=None):
         """ساخت سند جدید امضاشده و ذخیره با فرمت DOCX."""
         path = Path(file_path)
         if path.suffix.lower() != ".docx":
@@ -88,7 +88,26 @@ class WordEngine:
             raise RuntimeError("فایلی با این نام از قبل وجود دارد.")
 
         word = self.get_word_app(start_if_missing=True)
-        doc = word.Documents.Add()
+        if template_path:
+            template_path = Path(template_path)
+            print("Template path:", template_path)
+            print("Template exists:", template_path.exists())
+            print("Template extension:", template_path.suffix)
+
+            if template_path.exists():
+                import zipfile
+
+                print("Is valid ZIP:", zipfile.is_zipfile(template_path))
+
+                if zipfile.is_zipfile(template_path):
+                    with zipfile.ZipFile(template_path, "r") as z:
+                        print("ZIP test:", z.testzip())
+            doc = word.Documents.Add(
+                Template=str(template_path),
+                NewTemplate=False
+            )
+        else:
+            doc = word.Documents.Add()
 
         try:
             self.set_doc_signature(doc, path.name)
