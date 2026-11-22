@@ -1,29 +1,45 @@
-import re
-from pathlib import Path
-from tkinter import filedialog, messagebox
-
-try:
-    from .journals.manager import get_journals
-    from .journals.template_builder import build_template
-except ImportError:
-    from app.journals.manager import get_journals
-    from app.journals.template_builder import build_template
-
 """رابط کاربری گرافیکی مدرن و لوکس (CustomTkinter)."""
 
 try:  # اجرا به‌صورت پکیج
     from .config import *  # noqa: F401,F403
     from .word_engine import WordEngine
+    from .actions_equation import EquationActions
     from .actions_document import DocumentActions
-    from .actions_editing import EditingActions 
+    from .actions_editing import EditingActions
+    from .actions_figure import FigureActions
+    from .actions_table import TableActions
+    from .actions_footnote import FootnoteActions
+    from .ui_components.settings_btn import settings_btn
+    from .ui_components.editing_settings import (
+        show_editing_settings_modal as show_editing_settings_ui,
+    )
+    from .ui_components.footnote_settings import (
+        show_footnote_settings_modal as show_footnote_settings_ui,
+    )
+    from .ui_components.about_program import show_about_program_menu
+    from .ui_components.help_menu import show_help_menu
 except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     import os
     import sys
+
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from app.config import *  # noqa: F401,F403
     from app.word_engine import WordEngine
     from app.actions_document import DocumentActions
+    from app.actions_table import TableActions
     from app.actions_editing import EditingActions
+    from app.actions_figure import FigureActions
+    from app.actions_footnote import FootnoteActions
+    from app.actions_equation import EquationActions
+    from app.ui_components.settings_btn import settings_btn
+    from app.ui_components.editing_settings import (
+        show_editing_settings_modal as show_editing_settings_ui,
+    )
+    from app.ui_components.footnote_settings import (
+        show_footnote_settings_modal as show_footnote_settings_ui,
+    )
+    from app.ui_components.about_program import show_about_program_menu
+    from app.ui_components.help_menu import show_help_menu
 
 import customtkinter as ctk
 import pythoncom
@@ -31,7 +47,7 @@ import pythoncom
 MENU_ITEMS = {
     "مقاله‌نگار": [
         ("قالب پایان‌نامه", "تنظیم ساختار پایان‌نامه", 0),
-        ("قالب مقاله", "تنظیم ساختار مقاله", 1),
+        ("قالب مقاله", "تنظیم ساختار مقاله", 0),
         ("قالب گزارش", "تنظیم ساختار گزارش", 0),
     ],
     "مدیریت متن": [
@@ -41,9 +57,9 @@ MENU_ITEMS = {
     ],
     "عنوان و ارجاع": [
         ("عنوان‌ها", "درج و قالب‌بندی عنوان‌ها", 0),
-        ("فهرست مطالب", "مدیریت فهرست خودکار", 0),
-        ("شکل و جدول", "عنوان‌گذاری و شماره‌گذاری", 0),
-        ("ارجاع درون‌متنی", "درج ارجاع به بخش‌های سند", 0),
+        ("جدول عدد", "شماره‌گذاری جدول‌ها", 1),
+        ("عنوان شکل", "عنوان‌گذاری و شماره‌گذاری", 1),
+        ("معادله نویسی", "درج و ویرایش معادلات ریاضی", 1),
     ],
     "پانویس": [
         ("درج پانویس(پاورقی)", "افزودن پانویس به سند", 1),
@@ -62,17 +78,24 @@ MENU_ITEMS = {
         ("تغییر نام سند", "تغییر نام از داخل برنامه", 1),
         ("وضعیت سند", "نمایش اطلاعات و وضعیت سند", 0),
         ("ذخیرهٔ نسخه", "مدیریت نسخه‌های سند", 0),
-        ("ویراستاری","ویرایش سند",1)
+        ("ویراستاری", "ویرایش سند", 1),
     ],
     "ابزارها": [
         ("تنظیمات", "تنظیمات برنامه", 0),
-        ("راهنما", "راهنمای استفاده", 0),
-        ("دربارهٔ برنامه", "اطلاعات نسخه", 0),
+        ("راهنما", "راهنمای استفاده", 1),
+        ("دربارهٔ برنامه", "اطلاعات نسخه", 1),
     ],
 }
 
-
-class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
+class LuxuryWordAssistant(
+    DocumentActions,
+    EquationActions,
+    FigureActions,
+    TableActions,
+    ctk.CTk,
+    EditingActions,
+    FootnoteActions,
+):
     def __init__(self):
         super().__init__()
         pythoncom.CoInitialize()
@@ -230,9 +253,7 @@ class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
     def show_tab(self, tab_name):
         # نمایش تب انتخاب‌شده
         for name, button in self.tab_buttons.items():
-            button.configure(
-                fg_color=self.blue if name == tab_name else "transparent"
-            )
+            button.configure(fg_color=self.blue if name == tab_name else "transparent")
 
         # پاک‌کردن زیرشاخه‌های تب قبلی
         for widget in self.content.winfo_children():
@@ -249,14 +270,29 @@ class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
         # کارت‌های گزینه‌ها
         cards = ctk.CTkFrame(self.content, fg_color="transparent")
         cards.pack(fill="both", expand=True, padx=12, pady=8)
-        self.card_widgets = {} 
+        self.card_widgets = {}
 
         commands = {
-            "قالب مقاله": self.show_journal_selection,
             "ساخت سند جدید": self.create_doc_action,
             "اتصال به سند باز": self.connect_doc_action,
+            "معادله نویسی": self.equation_action,
+            "عنوان شکل": self.insert_figure_caption,
+            "جدول عدد": self.insert_table_number,
             "تغییر نام سند": self.rename_doc_action,
-            "ویراستاری": lambda: self.editing_menu_action(self.card_widgets["ویراستاری"]),
+            "ویراستاری": lambda: self.editing_menu_action(
+                self.card_widgets["ویراستاری"]
+            ),
+            "درج پانویس(پاورقی)": lambda: self.footnote_menu_action(
+                self.card_widgets["درج پانویس(پاورقی)"]
+            ),
+            "دربارهٔ برنامه": lambda: show_about_program_menu(
+                self,
+                self.card_widgets["دربارهٔ برنامه"],
+            ),
+            "راهنما": lambda: show_help_menu(
+                self,
+                self.card_widgets["راهنما"],
+            ),
         }
 
         for index, (title, subtitle, enabled) in enumerate(MENU_ITEMS[tab_name]):
@@ -280,7 +316,7 @@ class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
                 sticky="nsew",
             )
             card.grid_propagate(False)
-            self.card_widgets[title] = card 
+            self.card_widgets[title] = card
 
             ctk.CTkLabel(
                 card,
@@ -317,446 +353,41 @@ class LuxuryWordAssistant(DocumentActions, ctk.CTk, EditingActions):
             else:
                 for child in card.winfo_children():
                     child.configure(cursor="arrow")
-            
-                        # دکمه تنظیمات اختصاصی کارت ویراستاری
+
+                    # دکمه تنظیمات اختصاصی کارت ویراستاری
+                    # دکمه تنظیمات اختصاصی کارت ویراستاری
             if title == "ویراستاری":
-                settings_button = ctk.CTkButton(
+                settings_btn(
                     card,
-                    text="↖",
-                    width=34,
-                    height=34,
-                    corner_radius=17,
-                    font=ctk.CTkFont(size=22, weight="bold"),
-                    fg_color=self.blue,
-                    hover_color=self.blue_hover,
-                    text_color=self.text,
-                    command=self.show_editing_settings_modal,
+                    self.blue,
+                    self.blue_hover,
+                    self.text,
+                    self.show_editing_settings_modal,
                 )
 
-                settings_button.place(
-                    relx=0,
-                    rely=1,
-                    x=12,
-                    y=-10,
-                    anchor="sw",
+            # دکمه تنظیمات اختصاصی کارت پانویس
+            if title == "درج پانویس(پاورقی)":
+                settings_btn(
+                    card,
+                    self.blue,
+                    self.blue_hover,
+                    self.text,
+                    self.show_footnote_settings_modal,
                 )
 
         # سه ستون با اندازهٔ یکسان
         for column in range(3):
             cards.grid_columnconfigure(column, weight=1)
-    
+
         # ------------------------------------------------------------
+
     # تنظیمات ویراستاری
     # ------------------------------------------------------------
 
-    def _add_settings_switch(self, parent, text, key, default=False):
-        """ساخت یک گزینه روشن/خاموش در تنظیمات."""
-
-        row = ctk.CTkFrame(
-            parent,
-            fg_color="transparent",
-            height=42,
-        )
-        row.pack(fill="x", padx=8, pady=2)
-        row.pack_propagate(False)
-
-        label = ctk.CTkLabel(
-            row,
-            text=text,
-            font=ctk.CTkFont(family="Vazirmatn", size=11),
-            text_color=self.text,
-            anchor="e",
-        )
-        label.pack(side="right", fill="both", expand=True, padx=8)
-
-        switch = ctk.CTkSwitch(
-            row,
-            text="",
-            width=42,
-            progress_color=self.blue,
-            button_color="#F8FAFC",
-            button_hover_color="#CBD5E1",
-            fg_color=self.line,
-            onvalue=True,
-            offvalue=False,
-        )
-        switch.pack(side="left", padx=8)
-
-        if default:
-            switch.select()
-        else:
-            switch.deselect()
-
-        self.editing_settings_controls[key] = switch
-
-        return switch
-
     def show_editing_settings_modal(self):
         """نمایش پنجره تنظیمات ویراستاری."""
+        show_editing_settings_ui(self)
 
-        # جلوگیری از باز شدن چند پنجره هم‌زمان
-        if (
-            hasattr(self, "editing_settings_window")
-            and self.editing_settings_window
-            and self.editing_settings_window.winfo_exists()
-        ):
-            self.editing_settings_window.lift()
-            return
-
-        modal = ctk.CTkToplevel(self)
-        self.editing_settings_window = modal
-
-        modal.title("تنظیمات ویراستاری")
-        modal.geometry("460x590")
-        modal.resizable(False, False)
-        modal.configure(fg_color=self.bg)
-
-        modal.transient(self)
-        modal.grab_set()
-
-        # قرار گرفتن پنجره در مرکز برنامه
-        self.update_idletasks()
-
-        x = self.winfo_rootx() + (
-            self.winfo_width() - 460
-        ) // 2
-
-        y = self.winfo_rooty() + (
-            self.winfo_height() - 590
-        ) // 2
-
-        modal.geometry(f"460x590+{x}+{y}")
-
-        # نگهداری کنترل‌های تنظیمات
-        self.editing_settings_controls = {}
-
-        # قاب اصلی
-        main = ctk.CTkFrame(
-            modal,
-            fg_color=self.panel,
-            corner_radius=16,
-            border_width=1,
-            border_color=self.line,
-        )
-        main.pack(
-            fill="both",
-            expand=True,
-            padx=10,
-            pady=10,
-        )
-
-        # --------------------------------------------------
-        # سربرگ
-        # --------------------------------------------------
-
-        header = ctk.CTkFrame(
-            main,
-            fg_color="transparent",
-        )
-        header.pack(fill="x", padx=16, pady=(12, 8))
-
-        ctk.CTkButton(
-            header,
-            text="×",
-            width=32,
-            height=32,
-            corner_radius=9,
-            font=ctk.CTkFont(size=22),
-            fg_color="transparent",
-            hover_color=self.panel_light,
-            text_color=self.muted,
-            command=modal.destroy,
-        ).pack(side="left")
-
-        ctk.CTkLabel(
-            header,
-            text="تنظیمات ویراستاری",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=17,
-                weight="bold",
-            ),
-            text_color=self.text,
-        ).pack(side="right")
-
-        # خط جداکننده
-        ctk.CTkFrame(
-            main,
-            height=2,
-            fg_color=self.blue,
-        ).pack(fill="x", padx=16, pady=(0, 12))
-
-        # --------------------------------------------------
-        # بخش ویراستار
-        # --------------------------------------------------
-
-        ctk.CTkLabel(
-            main,
-            text="ویراستار",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=12,
-                weight="bold",
-            ),
-            text_color=self.blue_hover,
-        ).pack(anchor="e", padx=20, pady=(4, 8))
-
-        self._add_settings_switch(
-            main,
-            "اصلاح نیم‌فاصله در پانویس‌ها",
-            "footnotes",
-        )
-
-        self._add_settings_switch(
-            main,
-            "اصلاح نیم‌فاصله در سرصفحه و پاصفحه",
-            "headers_footers",
-        )
-
-        self._add_settings_switch(
-            main,
-            "اصلاح نیم‌فاصله در فیلدهای خاص",
-            "special_fields",
-        )
-
-        self._add_settings_switch(
-            main,
-            "ویرایش‌های نشانه‌گذاری‌شده به کاربر نمایش داده شود",
-            "show_revisions",
-            default=True,
-        )
-
-        # --------------------------------------------------
-        # بخش تبدیل اعداد
-        # --------------------------------------------------
-
-        ctk.CTkFrame(
-            main,
-            height=2,
-            fg_color=self.line,
-        ).pack(fill="x", padx=16, pady=(14, 10))
-
-        ctk.CTkLabel(
-            main,
-            text="تبدیل اعداد",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=12,
-                weight="bold",
-            ),
-            text_color=self.blue_hover,
-        ).pack(anchor="e", padx=20, pady=(2, 8))
-
-        self._add_settings_switch(
-            main,
-            "جایگزین کردن کاراکتر عدد",
-            "replace_number_character",
-        )
-
-        # --------------------------------------------------
-        # بخش شعر
-        # --------------------------------------------------
-
-        ctk.CTkFrame(
-            main,
-            height=2,
-            fg_color=self.line,
-        ).pack(fill="x", padx=16, pady=(14, 10))
-
-        ctk.CTkLabel(
-            main,
-            text="شعر",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=12,
-                weight="bold",
-            ),
-            text_color=self.blue_hover,
-        ).pack(anchor="e", padx=20, pady=(2, 8))
-
-        poetry_frame = ctk.CTkFrame(
-            main,
-            fg_color="transparent",
-        )
-        poetry_frame.pack(fill="x", padx=20, pady=8)
-
-        ctk.CTkLabel(
-            poetry_frame,
-            text="شیوه نوشتن شعر",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=11,
-            ),
-            text_color=self.muted,
-        ).pack(anchor="e", pady=(0, 8))
-
-        poetry_menu = ctk.CTkOptionMenu(
-            poetry_frame,
-            values=[
-                "به صورت ستونی",
-                "به صورت دو ستونی",
-            ],
-            height=38,
-            corner_radius=8,
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=11,
-            ),
-            fg_color=self.panel_light,
-            button_color=self.blue,
-            button_hover_color=self.blue_hover,
-            text_color=self.text,
-            dropdown_fg_color=self.panel,
-            dropdown_hover_color=self.panel_light,
-            dropdown_text_color=self.text,
-            dynamic_resizing=False,
-        )
-
-        poetry_menu.set("به صورت ستونی")
-        poetry_menu.pack(fill="x")
-
-        self.editing_settings_controls["poetry_style"] = poetry_menu
-
-
-    def show_journal_selection(self):
-        """Display available journals."""
-
-        for widget in self.content.winfo_children():
-            widget.destroy()
-
-        ctk.CTkLabel(
-            self.content,
-            text="انتخاب نشریه برای ساخت مقاله",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=18,
-                weight="bold"
-            ),
-            text_color="#60A5FA",
-        ).pack(anchor="e", padx=20, pady=(18, 6))
-
-        try:
-            journals = get_journals()
-
-        except Exception as exc:
-            messagebox.showerror(
-                "خطا در بارگذاری نشریه‌ها",
-                str(exc),
-                parent=self
-            )
-            return
-
-        if not journals:
-            ctk.CTkLabel(
-                self.content,
-                text="هیچ نشریه‌ای ثبت نشده است.",
-                text_color=self.muted,
-            ).pack(pady=30)
-            return
-
-        list_frame = ctk.CTkScrollableFrame(
-            self.content,
-            fg_color="transparent",
-            corner_radius=10
-        )
-
-        list_frame.pack(
-            fill="both",
-            expand=True,
-            padx=18,
-            pady=(4, 14)
-        )
-
-        for journal in journals:
-
-            card = ctk.CTkFrame(
-                list_frame,
-                fg_color=self.panel_light,
-                corner_radius=12,
-                border_width=1,
-                border_color=self.line,
-            )
-
-            card.pack(fill="x", padx=4, pady=6)
-
-            ctk.CTkLabel(
-                card,
-                text=journal["name"],
-                font=ctk.CTkFont(
-                    family="Vazirmatn",
-                    size=14,
-                    weight="bold"
-                ),
-                text_color=self.text,
-            ).pack(fill="x", padx=14, pady=10)
-
-            ctk.CTkButton(
-                card,
-                text="ساخت مقاله با این نشریه",
-                command=lambda item=journal:
-                    self.create_journal_article(item),
-            ).pack(anchor="e", padx=12, pady=12)
-
-
-    def create_journal_article(self, journal):
-        safe_id = re.sub(
-            r"[^A-Za-z0-9_-]+",
-            "_",
-            str(journal["id"])
-        ).strip("_") or "journal"
-
-        default_name = f"Article_{safe_id}.docx"
-
-        output_path = filedialog.asksaveasfilename(
-            parent=self,
-            title="ذخیره مقاله جدید",
-            initialfile=default_name,
-            defaultextension=".docx",
-            filetypes=[("Word Document", "*.docx")],
-        )
-
-        if not output_path:
-            return 
-
-        try:
-            template_dir = (
-                Path.home()
-                / "Documents"
-                / "PythonNegar"
-                / "Templates"
-            )
-
-            template_dir.mkdir(
-                parents=True,
-                exist_ok=True
-            )
-
-            template_path = (
-                template_dir / f"{safe_id}.dotx"
-            )
-
-            build_template(journal, template_path)
-
-            doc_name = self.engine.create_new_signed_doc(
-                output_path,
-                template_path=str(template_path)
-            )
-
-            self.update_status(
-                "مقاله ساخته و به ورد متصل شد.",
-                is_connected = True,
-                doc_name=doc_name,
-            )
-
-            messagebox.showinfo(
-                "ساخت سند",
-                f"سند مقاله با قالب «{journal['name']}» ساخته شد.",
-                parent = self,
-            )
-
-        except Exception as exc:
-            messagebox.showerror(
-                "خطا در ساخت مقاله",
-                f"ساخت مقاله انجام نشد:\n{exc}",
-                parent=self,
-            )
+    def show_footnote_settings_modal(self):
+        """نمایش پنجره تنظیمات پانویس."""
+        show_footnote_settings_ui(self)
