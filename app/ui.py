@@ -7,6 +7,7 @@ try:  # اجرا به‌صورت پکیج
     from .actions_document import DocumentActions
     from .actions_editing import EditingActions
     from .actions_figure import FigureActions
+    from .actions_table import TableActions
     from .actions_footnote import FootnoteActions
     from .ui_components.settings_btn import settings_btn
     from .ui_components.editing_settings import (
@@ -25,6 +26,7 @@ except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     from app.config import *  # noqa: F401,F403
     from app.word_engine import WordEngine
     from app.actions_document import DocumentActions
+    from app.actions_table import TableActions
     from app.actions_editing import EditingActions
     from app.actions_figure import FigureActions
     from app.actions_footnote import FootnoteActions
@@ -55,7 +57,7 @@ MENU_ITEMS = {
     ],
     "عنوان و ارجاع": [
         ("عنوان‌ها", "درج و قالب‌بندی عنوان‌ها", 0),
-        ("فهرست مطالب", "مدیریت فهرست خودکار", 0),
+        ("جدول عدد", "شماره‌گذاری جدول‌ها", 1),
         ("عنوان شکل", "عنوان‌گذاری و شماره‌گذاری", 1),
         ("معادله نویسی", "درج و ویرایش معادلات ریاضی", 1),
     ],
@@ -85,11 +87,11 @@ MENU_ITEMS = {
     ],
 }
 
-
 class LuxuryWordAssistant(
     DocumentActions,
     EquationActions,
     FigureActions,
+    TableActions,
     ctk.CTk,
     EditingActions,
     FootnoteActions,
@@ -275,6 +277,7 @@ class LuxuryWordAssistant(
             "اتصال به سند باز": self.connect_doc_action,
             "معادله نویسی": self.equation_action,
             "عنوان شکل": self.insert_figure_caption,
+            "جدول عدد": self.insert_table_number,
             "تغییر نام سند": self.rename_doc_action,
             "ویراستاری": lambda: self.editing_menu_action(
                 self.card_widgets["ویراستاری"]
