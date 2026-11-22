@@ -8,9 +8,14 @@ try:  # اجرا به‌صورت پکیج
     from .actions_editing import EditingActions
     from .actions_footnote import FootnoteActions
     from .ui_components.settings_btn import settings_btn
-    from .ui_components.editing_settings import show_editing_settings_modal as show_editing_settings_ui
-    from .ui_components.footnote_settings import show_footnote_settings_modal as show_footnote_settings_ui
+    from .ui_components.editing_settings import (
+        show_editing_settings_modal as show_editing_settings_ui,
+    )
+    from .ui_components.footnote_settings import (
+        show_footnote_settings_modal as show_footnote_settings_ui,
+    )
     from .ui_components.about_program import show_about_program_menu
+    from .ui_components.help_menu import show_help_menu
 except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     import os
     import sys
@@ -23,9 +28,14 @@ except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     from app.actions_footnote import FootnoteActions
     from app.actions_equation import EquationActions
     from app.ui_components.settings_btn import settings_btn
-    from app.ui_components.editing_settings import show_editing_settings_modal as show_editing_settings_ui
-    from app.ui_components.footnote_settings import show_footnote_settings_modal as show_footnote_settings_ui
+    from app.ui_components.editing_settings import (
+        show_editing_settings_modal as show_editing_settings_ui,
+    )
+    from app.ui_components.footnote_settings import (
+        show_footnote_settings_modal as show_footnote_settings_ui,
+    )
     from app.ui_components.about_program import show_about_program_menu
+    from app.ui_components.help_menu import show_help_menu
 
 import customtkinter as ctk
 import pythoncom
@@ -271,6 +281,10 @@ class LuxuryWordAssistant(
             "دربارهٔ برنامه": lambda: show_about_program_menu(
                 self,
                 self.card_widgets["دربارهٔ برنامه"],
+            ),
+            "راهنما": lambda: show_help_menu(
+                self,
+                self.card_widgets["راهنما"],
             ),
         }
 
