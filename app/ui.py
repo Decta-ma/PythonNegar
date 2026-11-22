@@ -9,6 +9,7 @@ try:  # اجرا به‌صورت پکیج
     from .ui_components.settings_btn import settings_btn
     from .ui_components.editing_settings import show_editing_settings_modal as show_editing_settings_ui
     from .ui_components.footnote_settings import show_footnote_settings_modal as show_footnote_settings_ui
+    from .ui_components.about_program import show_about_program_menu
 except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     import os
     import sys
@@ -22,6 +23,7 @@ except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     from app.ui_components.settings_btn import settings_btn
     from app.ui_components.editing_settings import show_editing_settings_modal as show_editing_settings_ui
     from app.ui_components.footnote_settings import show_footnote_settings_modal as show_footnote_settings_ui
+    from app.ui_components.about_program import show_about_program_menu
 
 import customtkinter as ctk
 import pythoncom
@@ -261,6 +263,10 @@ class LuxuryWordAssistant(
             ),
             "درج پانویس(پاورقی)": lambda: self.footnote_menu_action(
                 self.card_widgets["درج پانویس(پاورقی)"]
+            ),
+            "دربارهٔ برنامه": lambda: show_about_program_menu(
+                self,
+                self.card_widgets["دربارهٔ برنامه"],
             ),
         }
 
