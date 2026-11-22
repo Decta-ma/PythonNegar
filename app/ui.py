@@ -3,6 +3,7 @@
 try:  # اجرا به‌صورت پکیج
     from .config import *  # noqa: F401,F403
     from .word_engine import WordEngine
+    from .actions_equation import EquationActions
     from .actions_document import DocumentActions
     from .actions_editing import EditingActions
     from .actions_footnote import FootnoteActions
@@ -20,6 +21,7 @@ except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     from app.actions_document import DocumentActions
     from app.actions_editing import EditingActions
     from app.actions_footnote import FootnoteActions
+    from app.actions_equation import EquationActions
     from app.ui_components.settings_btn import settings_btn
     from app.ui_components.editing_settings import show_editing_settings_modal as show_editing_settings_ui
     from app.ui_components.footnote_settings import show_footnote_settings_modal as show_footnote_settings_ui
@@ -43,7 +45,7 @@ MENU_ITEMS = {
         ("عنوان‌ها", "درج و قالب‌بندی عنوان‌ها", 0),
         ("فهرست مطالب", "مدیریت فهرست خودکار", 0),
         ("شکل و جدول", "عنوان‌گذاری و شماره‌گذاری", 0),
-        ("ارجاع درون‌متنی", "درج ارجاع به بخش‌های سند", 0),
+        ("معادله نویسی", "درج و ویرایش معادلات ریاضی", 1),
     ],
     "پانویس": [
         ("درج پانویس(پاورقی)", "افزودن پانویس به سند", 1),
@@ -74,6 +76,7 @@ MENU_ITEMS = {
 
 class LuxuryWordAssistant(
     DocumentActions,
+    EquationActions,
     ctk.CTk,
     EditingActions,
     FootnoteActions,
@@ -257,6 +260,7 @@ class LuxuryWordAssistant(
         commands = {
             "ساخت سند جدید": self.create_doc_action,
             "اتصال به سند باز": self.connect_doc_action,
+            "معادله نویسی": self.equation_action,
             "تغییر نام سند": self.rename_doc_action,
             "ویراستاری": lambda: self.editing_menu_action(
                 self.card_widgets["ویراستاری"]
