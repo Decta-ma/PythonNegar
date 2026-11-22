@@ -174,6 +174,8 @@ def _flag(value):
 
 
 def _expand(text):
+    """تبدیل جانشین‌های تعریف‌شده به نویسه واقعی."""
+
     for token, char in PLACEHOLDERS.items():
         text = text.replace(token, char)
 

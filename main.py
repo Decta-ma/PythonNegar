@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from app.ui import LuxuryWordAssistant
 except ImportError:  # اجرای مستقیم فایل داخل پکیج
-    from .ui import LuxuryWordAssistant
+    from app.ui import LuxuryWordAssistant
 
 
 def main():

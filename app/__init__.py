@@ -10,7 +10,7 @@
 
 from importlib import import_module
 
-__all__ = ["LuxuryWordAssistant", "WordEngine", "LuxuryWordAssistant", "DocumentActions"]
+__all__ = ["LuxuryWordAssistant", "WordEngine", "DocumentActions"]
 __version__ = "1.0.0"
 
 _LAZY = {
@@ -23,7 +23,7 @@ _LAZY = {
 def __getattr__(name):
     module_name = _LAZY.get(name)
     if module_name is None:
-        raise AttributeError(f"module {{__name__!r}} has no attribute {{name!r}}")
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     module = import_module(module_name)
     value = getattr(module, name)
     globals()[name] = value
