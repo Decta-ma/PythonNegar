@@ -6,6 +6,9 @@ try:  # اجرا به‌صورت پکیج
     from .actions_document import DocumentActions
     from .actions_editing import EditingActions
     from .actions_footnote import FootnoteActions
+    from .ui_components.settings_btn import settings_btn
+    from .ui_components.editing_settings import show_editing_settings_modal as show_editing_settings_ui
+    from .ui_components.footnote_settings import show_footnote_settings_modal as show_footnote_settings_ui
 except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     import os
     import sys
@@ -16,6 +19,9 @@ except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     from app.actions_document import DocumentActions
     from app.actions_editing import EditingActions
     from app.actions_footnote import FootnoteActions
+    from app.ui_components.settings_btn import settings_btn
+    from app.ui_components.editing_settings import show_editing_settings_modal as show_editing_settings_ui
+    from app.ui_components.footnote_settings import show_footnote_settings_modal as show_footnote_settings_ui
 
 import customtkinter as ctk
 import pythoncom
@@ -58,8 +64,8 @@ MENU_ITEMS = {
     ],
     "ابزارها": [
         ("تنظیمات", "تنظیمات برنامه", 0),
-        ("راهنما", "راهنمای استفاده", 0),
-        ("دربارهٔ برنامه", "اطلاعات نسخه", 0),
+        ("راهنما", "راهنمای استفاده", 1),
+        ("دربارهٔ برنامه", "اطلاعات نسخه", 1),
     ],
 }
 
@@ -320,48 +326,22 @@ class LuxuryWordAssistant(
                     # دکمه تنظیمات اختصاصی کارت ویراستاری
                     # دکمه تنظیمات اختصاصی کارت ویراستاری
             if title == "ویراستاری":
-                settings_button = ctk.CTkButton(
+                settings_btn(
                     card,
-                    text="↖",
-                    width=12,
-                    height=10,
-                    corner_radius=999,
-                    font=ctk.CTkFont(size=18, weight="bold"),
-                    fg_color=self.blue,
-                    hover_color=self.blue_hover,
-                    text_color=self.text,
-                    command=self.show_editing_settings_modal,
-                )
-
-                settings_button.place(
-                    relx=0,
-                    rely=1,
-                    x=12,
-                    y=-10,
-                    anchor="sw",
+                    self.blue,
+                    self.blue_hover,
+                    self.text,
+                    self.show_editing_settings_modal,
                 )
 
             # دکمه تنظیمات اختصاصی کارت پانویس
             if title == "درج پانویس(پاورقی)":
-                settings_button = ctk.CTkButton(
+                settings_btn(
                     card,
-                    text="↖",
-                    width=12,
-                    height=10,
-                    corner_radius=999,
-                    font=ctk.CTkFont(size=18, weight="bold"),
-                    fg_color=self.blue,
-                    hover_color=self.blue_hover,
-                    text_color=self.text,
-                    command=self.show_footnote_settings_modal,
-                )
-
-                settings_button.place(
-                    relx=0,
-                    rely=1,
-                    x=12,
-                    y=-10,
-                    anchor="sw",
+                    self.blue,
+                    self.blue_hover,
+                    self.text,
+                    self.show_footnote_settings_modal,
                 )
 
         # سه ستون با اندازهٔ یکسان
@@ -373,493 +353,10 @@ class LuxuryWordAssistant(
     # تنظیمات ویراستاری
     # ------------------------------------------------------------
 
-    def _add_settings_switch(self, parent, text, key, default=False):
-        """ساخت یک گزینه روشن/خاموش در تنظیمات."""
-
-        row = ctk.CTkFrame(
-            parent,
-            fg_color="transparent",
-            height=42,
-        )
-        row.pack(fill="x", padx=8, pady=2)
-        row.pack_propagate(False)
-
-        label = ctk.CTkLabel(
-            row,
-            text=text,
-            font=ctk.CTkFont(family="Vazirmatn", size=11),
-            text_color=self.text,
-            anchor="e",
-        )
-        label.pack(side="right", fill="both", expand=True, padx=8)
-
-        switch = ctk.CTkSwitch(
-            row,
-            text="",
-            width=42,
-            progress_color=self.blue,
-            button_color="#F8FAFC",
-            button_hover_color="#CBD5E1",
-            fg_color=self.line,
-            onvalue=True,
-            offvalue=False,
-        )
-        switch.pack(side="left", padx=8)
-
-        if default:
-            switch.select()
-        else:
-            switch.deselect()
-
-        self.editing_settings_controls[key] = switch
-
-        return switch
-
     def show_editing_settings_modal(self):
         """نمایش پنجره تنظیمات ویراستاری."""
+        show_editing_settings_ui(self)
 
-        # جلوگیری از باز شدن چند پنجره هم‌زمان
-        if (
-            hasattr(self, "editing_settings_window")
-            and self.editing_settings_window
-            and self.editing_settings_window.winfo_exists()
-        ):
-            self.editing_settings_window.lift()
-            return
-
-        modal = ctk.CTkToplevel(self)
-        self.editing_settings_window = modal
-
-        modal.title("تنظیمات ویراستاری")
-        modal.geometry("460x590")
-        modal.resizable(False, False)
-        modal.configure(fg_color=self.bg)
-
-        modal.transient(self)
-        modal.grab_set()
-
-        # قرار گرفتن پنجره در مرکز برنامه
-        self.update_idletasks()
-
-        x = self.winfo_rootx() + (self.winfo_width() - 460) // 2
-
-        y = self.winfo_rooty() + (self.winfo_height() - 590) // 2
-
-        modal.geometry(f"460x590+{x}+{y}")
-
-        # نگهداری کنترل‌های تنظیمات
-        self.editing_settings_controls = {}
-
-        # قاب اصلی
-        main = ctk.CTkFrame(
-            modal,
-            fg_color=self.panel,
-            corner_radius=16,
-            border_width=1,
-            border_color=self.line,
-        )
-        main.pack(
-            fill="both",
-            expand=True,
-            padx=10,
-            pady=10,
-        )
-
-        # --------------------------------------------------
-        # سربرگ
-        # --------------------------------------------------
-
-        header = ctk.CTkFrame(
-            main,
-            fg_color="transparent",
-        )
-        header.pack(fill="x", padx=16, pady=(12, 8))
-
-        ctk.CTkButton(
-            header,
-            text="×",
-            width=32,
-            height=32,
-            corner_radius=9,
-            font=ctk.CTkFont(size=22),
-            fg_color="transparent",
-            hover_color=self.panel_light,
-            text_color=self.muted,
-            command=modal.destroy,
-        ).pack(side="left")
-
-        ctk.CTkLabel(
-            header,
-            text="تنظیمات ویراستاری",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=17,
-                weight="bold",
-            ),
-            text_color=self.text,
-        ).pack(side="right")
-
-        # خط جداکننده
-        ctk.CTkFrame(
-            main,
-            height=2,
-            fg_color=self.blue,
-        ).pack(fill="x", padx=16, pady=(0, 12))
-
-        # --------------------------------------------------
-        # بخش ویراستار
-        # --------------------------------------------------
-
-        ctk.CTkLabel(
-            main,
-            text="ویراستار",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=12,
-                weight="bold",
-            ),
-            text_color=self.blue_hover,
-        ).pack(anchor="e", padx=20, pady=(4, 8))
-
-        self._add_settings_switch(
-            main,
-            "اصلاح نیم‌فاصله در پانویس‌ها",
-            "footnotes",
-        )
-
-        self._add_settings_switch(
-            main,
-            "اصلاح نیم‌فاصله در سرصفحه و پاصفحه",
-            "headers_footers",
-        )
-
-        self._add_settings_switch(
-            main,
-            "اصلاح نیم‌فاصله در فیلدهای خاص",
-            "special_fields",
-        )
-
-        self._add_settings_switch(
-            main,
-            "ویرایش‌های نشانه‌گذاری‌شده به کاربر نمایش داده شود",
-            "show_revisions",
-            default=True,
-        )
-
-        # --------------------------------------------------
-        # بخش تبدیل اعداد
-        # --------------------------------------------------
-
-        ctk.CTkFrame(
-            main,
-            height=2,
-            fg_color=self.line,
-        ).pack(fill="x", padx=16, pady=(14, 10))
-
-        ctk.CTkLabel(
-            main,
-            text="تبدیل اعداد",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=12,
-                weight="bold",
-            ),
-            text_color=self.blue_hover,
-        ).pack(anchor="e", padx=20, pady=(2, 8))
-
-        self._add_settings_switch(
-            main,
-            "جایگزین کردن کاراکتر عدد",
-            "replace_number_character",
-        )
-
-        # --------------------------------------------------
-        # بخش شعر
-        # --------------------------------------------------
-
-        ctk.CTkFrame(
-            main,
-            height=2,
-            fg_color=self.line,
-        ).pack(fill="x", padx=16, pady=(14, 10))
-
-        ctk.CTkLabel(
-            main,
-            text="شعر",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=12,
-                weight="bold",
-            ),
-            text_color=self.blue_hover,
-        ).pack(anchor="e", padx=20, pady=(2, 8))
-
-        poetry_frame = ctk.CTkFrame(
-            main,
-            fg_color="transparent",
-        )
-        poetry_frame.pack(fill="x", padx=20, pady=8)
-
-        ctk.CTkLabel(
-            poetry_frame,
-            text="شیوه نوشتن شعر",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=11,
-            ),
-            text_color=self.muted,
-        ).pack(anchor="e", pady=(0, 8))
-
-        poetry_menu = ctk.CTkOptionMenu(
-            poetry_frame,
-            values=[
-                "به صورت ستونی",
-                "به صورت دو ستونی",
-            ],
-            height=38,
-            corner_radius=8,
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=11,
-            ),
-            fg_color=self.panel_light,
-            button_color=self.blue,
-            button_hover_color=self.blue_hover,
-            text_color=self.text,
-            dropdown_fg_color=self.panel,
-            dropdown_hover_color=self.panel_light,
-            dropdown_text_color=self.text,
-            dynamic_resizing=False,
-        )
-
-        poetry_menu.set("به صورت ستونی")
-        poetry_menu.pack(fill="x")
-
-        self.editing_settings_controls["poetry_style"] = poetry_menu
-    
-    
     def show_footnote_settings_modal(self):
-        """نمایش پنجره تنظیمات درج پانویس."""
-
-        # جلوگیری از باز شدن چند پنجره هم‌زمان
-        if (
-            hasattr(self, "footnote_settings_window")
-            and self.footnote_settings_window
-            and self.footnote_settings_window.winfo_exists()
-        ):
-            self.footnote_settings_window.focus()
-            return
-
-        # تنظیمات پیش‌فرض
-        if not hasattr(self, "footnote_settings"):
-            self.footnote_settings = {}
-
-        defaults = {
-            "auto_keyboard": True,
-            "auto_direction": True,
-            "default_language": "فارسی",
-            "display_mode": "معمولی",
-            "separator_position": "چپ",
-            "reference_style": "پیش‌فرض",
-        }
-
-        for key, value in defaults.items():
-            self.footnote_settings.setdefault(key, value)
-
-        settings = self.footnote_settings
-
-        # ساخت پنجره
-        window = ctk.CTkToplevel(self)
-        self.footnote_settings_window = window
-
-        window.title("تنظیمات پانویس")
-        window.geometry("440x620")
-        window.resizable(False, False)
-        window.configure(fg_color=self.bg)
-        window.transient(self)
-        window.grab_set()
-
-        window.update_idletasks()
-
-        x = self.winfo_rootx() + (self.winfo_width() - 440) // 2
-        y = self.winfo_rooty() + (self.winfo_height() - 620) // 2
-        window.geometry(f"440x620+{x}+{y}")
-
-        def close_window():
-            window.destroy()
-            self.footnote_settings_window = None
-
-        window.protocol("WM_DELETE_WINDOW", close_window)
-
-        # پنل اصلی
-        panel = ctk.CTkFrame(
-            window,
-            fg_color=self.panel,
-            corner_radius=16,
-            border_width=1,
-            border_color=self.line,
-        )
-        panel.pack(fill="both", expand=True, padx=14, pady=14)
-
-        # سربرگ
-        header = ctk.CTkFrame(
-            panel,
-            fg_color="transparent",
-        )
-        header.pack(fill="x", padx=18, pady=(16, 10))
-
-        close_button = ctk.CTkButton(
-            header,
-            text="✕",
-            width=30,
-            height=30,
-            corner_radius=15,
-            fg_color="transparent",
-            hover_color=self.line,
-            text_color=self.muted,
-            command=close_window,
-        )
-        close_button.pack(side="left")
-
-        title = ctk.CTkLabel(
-            header,
-            text="تنظیمات پانویس",
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=16,
-                weight="bold",
-            ),
-            text_color=self.text,
-        )
-        title.pack(side="right")
-
-        ctk.CTkFrame(
-            panel,
-            height=2,
-            fg_color=self.blue,
-        ).pack(fill="x", padx=18, pady=(0, 14))
-
-        # نگهداری کنترل‌های تنظیمات
-        controls = {}
-
-        def add_option_row(title, key, options):
-            """ساخت یک ردیف تنظیمات کشویی."""
-
-            row = ctk.CTkFrame(
-                panel,
-                fg_color="transparent",
-                height=62,
-            )
-            row.pack(fill="x", padx=20, pady=8)
-            row.pack_propagate(False)
-
-            option_menu = ctk.CTkOptionMenu(
-                row,
-                values=options,
-                width=180,
-                height=48,
-                corner_radius=8,
-                fg_color=self.panel_light,
-                button_color=self.panel_light,
-                button_hover_color=self.blue,
-                dropdown_fg_color=self.panel,
-                dropdown_hover_color=self.panel_light,
-                text_color=self.text,
-                font=ctk.CTkFont(
-                    family="Vazirmatn",
-                    size=11,
-                ),
-                dropdown_font=ctk.CTkFont(
-                    family="Vazirmatn",
-                    size=11,
-                ),
-            )
-
-            current_value = settings.get(key, options[0])
-
-            if current_value not in options:
-                current_value = options[0]
-
-            option_menu.set(current_value)
-            option_menu.pack(side="left", padx=10)
-
-            label = ctk.CTkLabel(
-                row,
-                text=title,
-                font=ctk.CTkFont(
-                    family="Vazirmatn",
-                    size=11,
-                ),
-                text_color=self.text,
-            )
-            label.pack(side="right", padx=8)
-
-            controls[key] = option_menu
-
-        # نحوه نمایش پانویس
-        add_option_row(
-            "نحوه نمایش پانویس",
-            "display_mode",
-            [
-                "معمولی",
-                "دو ستونه",
-            ],
-        )
-
-        # وضعیت خط جداکننده
-        add_option_row(
-            "وضعیت خط جداکننده پانویس",
-            "separator_position",
-            [
-                "چپ",
-                "راست",
-                "وسط",
-                "ممتد",
-            ],
-        )
-
-        # شیوه ارجاع
-        add_option_row(
-            "شیوه ارجاع به پانویس",
-            "reference_style",
-            [
-                "پیش‌فرض",
-                "همراه با خط تیره",
-            ],
-        )
-
-        # دکمه ذخیره
-        def save_settings():
-            settings["display_mode"] = controls["display_mode"].get()
-            settings["separator_position"] = controls[
-                "separator_position"
-            ].get()
-            settings["reference_style"] = controls[
-                "reference_style"
-            ].get()
-
-            # اعمال نحوه نمایش پانویس در Word
-            self._apply_footnote_display_mode()
-            
-            self._apply_footnote_separator_position()
-            
-            self._apply_footnote_reference_style()
-
-            close_window()
-
-        save_button = ctk.CTkButton(
-            panel,
-            text="ذخیره تنظیمات",
-            height=40,
-            corner_radius=10,
-            fg_color=self.blue,
-            hover_color=self.blue_hover,
-            text_color=self.text,
-            font=ctk.CTkFont(
-                family="Vazirmatn",
-                size=12,
-                weight="bold",
-            ),
-            command=save_settings,
-        )
-        save_button.pack(fill="x", padx=22, pady=(20, 16))
+        """نمایش پنجره تنظیمات پانویس."""
+        show_footnote_settings_ui(self)
