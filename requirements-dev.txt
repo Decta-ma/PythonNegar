@@ -1,0 +1,4 @@
+# this file need for test
+
+-r requirements.txt
+pytest
