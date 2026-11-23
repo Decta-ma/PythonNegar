@@ -5,11 +5,7 @@
 """
 
 from dataclasses import dataclass, field
-
-# ثابت‌های Word (wdFindWrap / wdReplace / wdCollapseDirection)
-WD_FIND_STOP = 0
-WD_REPLACE_ALL = 2
-WD_COLLAPSE_END = 0
+from .config import WD_COLLAPSE_END, WD_FIND_STOP, WD_REPLACE_ALL
 
 MAX_PER_RULE = 100_000   # سقف ایمنی برای جلوگیری از حلقهٔ بی‌پایان
 
