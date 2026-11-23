@@ -1,14 +1,15 @@
 
 """قالب‌بندی شعر در سند Word."""
 
-from .config import (
-    WD_ALIGN_PARAGRAPH_CENTER,
-    WD_ALIGN_PARAGRAPH_RIGHT,
-    WD_AUTO_FIT_WINDOW,
-    WD_FIND_STOP,
-    WD_REPLACE_ALL,
-    WD_TABLE_DIRECTION_RTL,
-)
+# ثابت‌های Word
+WD_ALIGN_PARAGRAPH_RIGHT = 2
+WD_ALIGN_PARAGRAPH_CENTER = 1
+
+WD_TABLE_DIRECTION_RTL = 1
+WD_AUTO_FIT_WINDOW = 2
+
+WD_REPLACE_ALL = 2
+WD_FIND_STOP = 0
 
 
 def _get_paragraphs_in_range(doc, selected_range):
