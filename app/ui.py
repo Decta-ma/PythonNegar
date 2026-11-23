@@ -1,6 +1,7 @@
 """رابط کاربری گرافیکی مدرن و لوکس (CustomTkinter)."""
 
 try:  # اجرا به‌صورت پکیج
+    from .ui_components.journal_selection import show_journal_selection
     from .config import *  # noqa: F401,F403
     from .word_engine import WordEngine
     from .actions_equation import EquationActions
@@ -21,6 +22,7 @@ try:  # اجرا به‌صورت پکیج
 except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     import os
     import sys
+    from app.ui_components.journal_selection import show_journal_selection
 
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from app.config import *  # noqa: F401,F403
@@ -47,7 +49,7 @@ import pythoncom
 MENU_ITEMS = {
     "مقاله‌نگار": [
         ("قالب پایان‌نامه", "تنظیم ساختار پایان‌نامه", 0),
-        ("قالب مقاله", "تنظیم ساختار مقاله", 0),
+        ("قالب مقاله", "تنظیم ساختار مقاله", 1),
         ("قالب گزارش", "تنظیم ساختار گزارش", 0),
     ],
     "مدیریت متن": [
@@ -273,6 +275,7 @@ class LuxuryWordAssistant(
         self.card_widgets = {}
 
         commands = {
+            "قالب مقاله": lambda: show_journal_selection(self),
             "ساخت سند جدید": self.create_doc_action,
             "اتصال به سند باز": self.connect_doc_action,
             "معادله نویسی": self.equation_action,
