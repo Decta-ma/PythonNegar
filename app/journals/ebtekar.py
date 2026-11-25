@@ -41,7 +41,7 @@ EBTEKAR = {
     # ---- starting content of a new article (same order as Journals.xml) ----
     # Each item is (style id, parts, options). parts = text, a field/hint, or a list of them.
     "skeleton": [
-        # 1_TitleAndAuthors: journal info table, then title and authors
+        # 1_TitleAndauthorss: journal info table, then title and authorss
         {"table": {
             "widths_cm": [0.45, 11.93],
             "cells": [
@@ -65,7 +65,7 @@ EBTEKAR = {
         }},
         ("BodyNegar", ""),
         ("TitleNegar", hint("TitleFa", "عنوان فارسی مقاله", "عنوان مقاله")),
-        ("TitleNegarAuthor", {"text": "نام نویسندگان", "bookmark": "AuthorNamesFa"}),
+        ("TitleNegarauthors", {"text": "نام نویسندگان", "bookmark": "authorsNamesFa"}),
 
         # 2_Abstract
         ("AbstractHeadNegar", "چکیده"),
@@ -101,7 +101,7 @@ EBTEKAR = {
         # 10_EnglishAbstract: new page, left-to-right
         ("TitleNegar", hint("TitleEn", "English title", "Article Title"),
          {"rtl": False, "page_break": True}),
-        ("TitleNegarAuthor", {"text": "Author Names", "bookmark": "AuthorNamesEn"},
+        ("TitleNegarauthors", {"text": "authors Names", "bookmark": "authorsNamesEn"},
          {"rtl": False}),
         ("AbstractHeadNegar", "Abstract", {"rtl": False}),
         ("AbstractBodyNegar", hint("AbstractEn", "English abstract",
@@ -116,7 +116,7 @@ EBTEKAR = {
     # based_on / next are style ids. Missing keys = inherit from based_on.
     "styles": {
         "BaseNegar": {"size": 12},
-        "TitleNegar": {"based_on": "BaseNegar", "next": "TitleNegarAuthor",
+        "TitleNegar": {"based_on": "BaseNegar", "next": "TitleNegarauthors",
                        "font_cs": "B Nazanin", "size": 16, "bold": True,
                        "align": "center", "before": 12, "after": 12,
                        "keep_next": True},
@@ -127,7 +127,7 @@ EBTEKAR = {
                         "size": 12, "keep_next": True, "outline": 1},
         "TitleNegar3": {"based_on": "TitleNegar2", "next": "BodyNegar",
                         "size": 12, "outline": 2},
-        "TitleNegarAuthor": {"based_on": "BaseNegar", "size": 11,
+        "TitleNegarauthors": {"based_on": "BaseNegar", "size": 11,
                              "align": "center", "after": 12},
         "AbstractHeadNegar": {"based_on": "BaseNegar", "next": "AbstractBodyNegar",
                               "size": 11, "bold": True, "before": 6, "after": 3,

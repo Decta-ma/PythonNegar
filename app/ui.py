@@ -1,7 +1,7 @@
 """رابط کاربری گرافیکی مدرن و لوکس (CustomTkinter)."""
 
 try:  # اجرا به‌صورت پکیج
-    from .ui_components.journal_selection import show_journal_selection
+    from . import features, registry, theme
     from .config import *  # noqa: F401,F403
     from .word_engine import WordEngine
     from .actions_equation import EquationActions
@@ -11,20 +11,12 @@ try:  # اجرا به‌صورت پکیج
     from .actions_table import TableActions
     from .actions_footnote import FootnoteActions
     from .ui_components.settings_btn import settings_btn
-    from .ui_components.editing_settings import (
-        show_editing_settings_modal as show_editing_settings_ui,
-    )
-    from .ui_components.footnote_settings import (
-        show_footnote_settings_modal as show_footnote_settings_ui,
-    )
-    from .ui_components.about_program import show_about_program_menu
-    from .ui_components.help_menu import show_help_menu
+    
 except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     import os
     import sys
-    from app.ui_components.journal_selection import show_journal_selection
-
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from app import features, registry, theme
     from app.config import *  # noqa: F401,F403
     from app.word_engine import WordEngine
     from app.actions_document import DocumentActions
@@ -34,60 +26,13 @@ except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     from app.actions_footnote import FootnoteActions
     from app.actions_equation import EquationActions
     from app.ui_components.settings_btn import settings_btn
-    from app.ui_components.editing_settings import (
-        show_editing_settings_modal as show_editing_settings_ui,
-    )
-    from app.ui_components.footnote_settings import (
-        show_footnote_settings_modal as show_footnote_settings_ui,
-    )
-    from app.ui_components.about_program import show_about_program_menu
-    from app.ui_components.help_menu import show_help_menu
 
+import traceback
 import customtkinter as ctk
 import pythoncom
 
-MENU_ITEMS = {
-    "مقاله‌نگار": [
-        ("قالب پایان‌نامه", "تنظیم ساختار پایان‌نامه", 0),
-        ("قالب مقاله", "تنظیم ساختار مقاله", 1),
-        ("قالب گزارش", "تنظیم ساختار گزارش", 0),
-    ],
-    "مدیریت متن": [
-        ("استانداردسازی واژه‌ها", "یکسان‌سازی واژگان فارسی", 0),
-        ("تنظیم پاراگراف", "فاصله، تورفتگی و چینش", 0),
-        ("قالب‌بندی متن", "فونت، اندازه و سبک نوشتار", 0),
-    ],
-    "عنوان و ارجاع": [
-        ("عنوان‌ها", "درج و قالب‌بندی عنوان‌ها", 0),
-        ("جدول عدد", "شماره‌گذاری جدول‌ها", 1),
-        ("عنوان شکل", "عنوان‌گذاری و شماره‌گذاری", 1),
-        ("معادله نویسی", "درج و ویرایش معادلات ریاضی", 1),
-    ],
-    "پانویس": [
-        ("درج پانویس(پاورقی)", "افزودن پانویس به سند", 1),
-        ("مدیریت پانویس‌ها", "مشاهده و تنظیم پانویس‌ها", 0),
-        ("قالب پانویس", "تنظیم قلم و فاصله", 0),
-    ],
-    "مدیریت منابع": [
-        ("افزودن منبع", "ثبت اطلاعات منبع", 0),
-        ("کتاب‌نامه", "ساخت فهرست منابع", 0),
-        ("سبک ارجاع‌دهی", "تنظیم شیوهٔ استناد", 0),
-        ("به‌روزرسانی منابع", "بازسازی ارجاعات سند", 0),
-    ],
-    "مدیریت سند": [
-        ("ساخت سند جدید", "ایجاد سند دانشگاهی", 1),
-        ("اتصال به سند باز", "اتصال به سند فعال Word", 1),
-        ("تغییر نام سند", "تغییر نام از داخل برنامه", 1),
-        ("وضعیت سند", "نمایش اطلاعات و وضعیت سند", 0),
-        ("ذخیرهٔ نسخه", "مدیریت نسخه‌های سند", 0),
-        ("ویراستاری", "ویرایش سند", 1),
-    ],
-    "ابزارها": [
-        ("تنظیمات", "تنظیمات برنامه", 0),
-        ("راهنما", "راهنمای استفاده", 1),
-        ("دربارهٔ برنامه", "اطلاعات نسخه", 1),
-    ],
-}
+# ثبت همهٔ کارت‌ها (هر فایل در app/features/ خودش را ثبت می‌کند)
+features.load_all()
 
 class LuxuryWordAssistant(
     DocumentActions,
@@ -123,14 +68,14 @@ class LuxuryWordAssistant(
         self.minsize(760, 560)
 
         # رنگ‌های رابط
-        self.bg = "#0A1124"
-        self.panel = "#101D3F"
-        self.panel_light = "#14244D"
-        self.blue = "#2563EB"
-        self.blue_hover = "#3B82F6"
-        self.text = "#F8FAFC"
-        self.muted = "#94A3B8"
-        self.line = "#23345B"
+        self.bg = theme.BG
+        self.panel = theme.PANEL
+        self.panel_light = theme.PANEL_LIGHT
+        self.blue = theme.BLUE
+        self.blue_hover = theme.BLUE_HOVER
+        self.text = theme.TEXT
+        self.muted = theme.MUTED
+        self.line = theme.LINE
 
         # قاب اصلی
         root = ctk.CTkFrame(self, fg_color=self.bg, corner_radius=0)
@@ -158,15 +103,7 @@ class LuxuryWordAssistant(
         self.tabs_frame = ctk.CTkFrame(root, fg_color=self.panel, corner_radius=12)
         self.tabs_frame.pack(fill="x", padx=18, pady=(0, 10))
 
-        self.tab_names = [
-            "مقاله‌نگار",
-            "مدیریت متن",
-            "عنوان و ارجاع",
-            "پانویس",
-            "مدیریت منابع",
-            "مدیریت سند",
-            "ابزارها",
-        ]
+        self.tab_names = list(registry.TAB_NAMES)
         self.tab_buttons = {}
 
         for tab_name in self.tab_names:
@@ -273,43 +210,18 @@ class LuxuryWordAssistant(
         cards = ctk.CTkFrame(self.content, fg_color="transparent")
         cards.pack(fill="both", expand=True, padx=12, pady=8)
         self.card_widgets = {}
-
-        commands = {
-            "قالب مقاله": lambda: show_journal_selection(self),
-            "ساخت سند جدید": self.create_doc_action,
-            "اتصال به سند باز": self.connect_doc_action,
-            "معادله نویسی": self.equation_action,
-            "عنوان شکل": self.insert_figure_caption,
-            "جدول عدد": self.insert_table_number,
-            "تغییر نام سند": self.rename_doc_action,
-            "ویراستاری": lambda: self.editing_menu_action(
-                self.card_widgets["ویراستاری"]
-            ),
-            "درج پانویس(پاورقی)": lambda: self.footnote_menu_action(
-                self.card_widgets["درج پانویس(پاورقی)"]
-            ),
-            "دربارهٔ برنامه": lambda: show_about_program_menu(
-                self,
-                self.card_widgets["دربارهٔ برنامه"],
-            ),
-            "راهنما": lambda: show_help_menu(
-                self,
-                self.card_widgets["راهنما"],
-            ),
-        }
-
-        for index, (title, subtitle, enabled) in enumerate(MENU_ITEMS[tab_name]):
-            active = enabled == 1
-            card_bg = self.panel_light if active else "#1E293B"
-            accent = "#39FF88" if active else "#64748B"
-            subtitle_color = "#A7F3D0" if active else "#64748B"
+        for index, item in enumerate(registry.cards_for(tab_name)):
+            title, subtitle = item.title, item.subtitle
+            active = item.command is not None
+            card_bg = self.panel_light if active else theme.DISABLED_BG
+            accent = theme.ACTIVE_ACCENT if active else theme.DISABLED_ACCENT
+            subtitle_color = theme.ACTIVE_SUBTITLE if active else theme.DISABLED_ACCENT
             card = ctk.CTkFrame(
                 cards,
                 fg_color=card_bg,
                 corner_radius=12,
                 border_width=1,
-                border_color="#39FF88" if active else "#475569",
-                height=96,
+                border_color=theme.ACTIVE_ACCENT if active else theme.DISABLED_BORDER,                height=96,
             )
             card.grid(
                 row=index // 3,
@@ -344,11 +256,9 @@ class LuxuryWordAssistant(
                 justify="right",
             ).pack(anchor="e", padx=12, pady=(2, 8))
 
-            command = commands.get(title) if active else None
-            card.configure(cursor="hand2" if command else "arrow")
-            if command:
-                handler = command
-                invoke = lambda event, action=handler: action()
+            card.configure(cursor="hand2" if active else "arrow")
+            if active:
+                invoke = lambda event, item=item: self._run_card(item)
                 card.bind("<Button-1>", invoke)
                 for child in card.winfo_children():
                     child.configure(cursor="hand2")
@@ -357,40 +267,28 @@ class LuxuryWordAssistant(
                 for child in card.winfo_children():
                     child.configure(cursor="arrow")
 
-                    # دکمه تنظیمات اختصاصی کارت ویراستاری
-                    # دکمه تنظیمات اختصاصی کارت ویراستاری
-            if title == "ویراستاری":
+            # دکمهٔ تنظیمات اختصاصی کارت (اگر فیچر settings داده باشد)
+            if item.settings is not None:
                 settings_btn(
                     card,
                     self.blue,
                     self.blue_hover,
                     self.text,
-                    self.show_editing_settings_modal,
+                    lambda item=item: item.settings(self),
                 )
-
-            # دکمه تنظیمات اختصاصی کارت پانویس
-            if title == "درج پانویس(پاورقی)":
-                settings_btn(
-                    card,
-                    self.blue,
-                    self.blue_hover,
-                    self.text,
-                    self.show_footnote_settings_modal,
-                )
-
         # سه ستون با اندازهٔ یکسان
         for column in range(3):
             cards.grid_columnconfigure(column, weight=1)
 
         # ------------------------------------------------------------
-
-    # تنظیمات ویراستاری
-    # ------------------------------------------------------------
-
-    def show_editing_settings_modal(self):
-        """نمایش پنجره تنظیمات ویراستاری."""
-        show_editing_settings_ui(self)
-
-    def show_footnote_settings_modal(self):
-        """نمایش پنجره تنظیمات پانویس."""
-        show_footnote_settings_ui(self)
+    # ------------------------------------------------------------ اجرای کارت
+    def _run_card(self, item):
+        """اجرای فرمان کارت؛ خطای یک فیچر کل برنامه را نمی‌بندد."""
+        try:
+            if item.anchor:
+                item.command(self, self.card_widgets[item.title])
+            else:
+                item.command(self)
+        except Exception:
+            traceback.print_exc()
+            self.update_status(f"خطا در اجرای «{item.title}»", is_connected=False)

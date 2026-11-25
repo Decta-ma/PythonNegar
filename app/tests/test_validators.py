@@ -25,30 +25,30 @@ def test_validate_email(email, expected):
 
 
 
-def validate_author(author, others=()):
+def validate_authors(authors, others=()):
     """نویسنده را بررسی می‌کند. خروجی: لیست پیام‌های خطا (خالی یعنی سالم)."""
     errors = []
 
-    for label, value in (("نام نویسنده", author.name_fa),
-                         ("نام انگلیسی نویسنده", author.name_en)):
+    for label, value in (("نام نویسنده", authors.name_fa),
+                         ("نام انگلیسی نویسنده", authors.name_en)):
         msg = validate_required_text(value)
         if msg:
             errors.append(f"{label}: {msg}")
 
-    msg = validate_email(author.email, required=author.is_responsible)
+    msg = validate_email(authors.email, required=authors.is_responsible)
     if msg:
         errors.append(msg)
 
-    if author.orcid and normalize_orcid(author.orcid) is None:
+    if authors.orcid and normalize_orcid(authors.orcid) is None:
         errors.append("شناسه ارکید معتبر نیست. قالب صحیح: 0000-0000-0000-0000")
 
-    others = [o for o in others if o is not author]
+    others = [o for o in others if o is not authors]
 
-    email = author.email.strip().lower()
+    email = authors.email.strip().lower()
     if email and any(o.email.strip().lower() == email for o in others):
         errors.append("این ایمیل قبلاً برای نویسنده دیگری ثبت شده است.")
 
-    if author.is_responsible and any(o.is_responsible for o in others):
+    if authors.is_responsible and any(o.is_responsible for o in others):
         errors.append("قبلاً یک نویسنده مسئول ثبت شده است.")
 
     return errors

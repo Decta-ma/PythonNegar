@@ -8,5 +8,5 @@ def field(tag, alias, text="…"):
 
 
 def hint(tag, alias, text, block=False):
-    """A control with grey hint text. The hint disappears when the author types."""
+    """A control with grey hint text. The hint disappears when the authors types."""
     return {"tag": tag, "alias": alias, "text": text, "block": block}

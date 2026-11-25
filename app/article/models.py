@@ -21,7 +21,7 @@ class Affiliation:
 
 
 @dataclass
-class Author:
+class authors:
     name_fa: str
     name_en: str
     email: str = ""
@@ -35,4 +35,4 @@ class ArticleInfo:
     journal_id: str
     title_fa: str
     title_en: str
-    author: list = field(default_factory=list)
+    authorss: list = field(default_factory=list)
