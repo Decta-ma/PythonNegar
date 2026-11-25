@@ -336,4 +336,4 @@ def build_template(cfg, output_path):
 
 if __name__ == "__main__":
     from app.journals.ebtekar import EBTEKAR
-    print("Saved:", build_template(EBTEKAR, "Ebtekar_generated.dotm"))
+    print("Saved:", build_template(EBTEKAR, "Ebtekar_generated.dotx"))

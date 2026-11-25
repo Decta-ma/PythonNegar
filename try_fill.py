@@ -22,6 +22,6 @@ info = ArticleInfo(
 )
 
 engine = WordEngine()
-template = Path.home() / "Documents" / "PythonNegar" / "Templates" / "Ebtekar.dotx"
-engine.create_new_signed_doc(str(Path.home() / "Documents" / "test_fill.docx"), template)
+template = Path("Ebtekar_generated.dotx").resolve()
+engine.create_new_signed_doc(str(Path.home() / "Documents" / "test_fill2.docx"), template)
 fill_document(engine.doc, info)

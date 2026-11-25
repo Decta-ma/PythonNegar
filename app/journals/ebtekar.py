@@ -65,7 +65,7 @@ EBTEKAR = {
         }},
         ("BodyNegar", ""),
         ("TitleNegar", hint("TitleFa", "عنوان فارسی مقاله", "عنوان مقاله")),
-        ("TitleNegarauthors", {"text": "نام نویسندگان", "bookmark": "authorsNamesFa"}),
+        ("TitleNegarauthors", {"text": "نام نویسندگان", "bookmark": "AuthorNamesFa"}),
 
         # 2_Abstract
         ("AbstractHeadNegar", "چکیده"),
@@ -101,7 +101,7 @@ EBTEKAR = {
         # 10_EnglishAbstract: new page, left-to-right
         ("TitleNegar", hint("TitleEn", "English title", "Article Title"),
          {"rtl": False, "page_break": True}),
-        ("TitleNegarauthors", {"text": "authors Names", "bookmark": "authorsNamesEn"},
+        ("TitleNegarauthors", {"text": "authors Names", "bookmark": "AuthorNamesEn"},
          {"rtl": False}),
         ("AbstractHeadNegar", "Abstract", {"rtl": False}),
         ("AbstractBodyNegar", hint("AbstractEn", "English abstract",
@@ -147,5 +147,7 @@ EBTEKAR = {
         "TableTextNegar": {"based_on": "BaseNegar", "size": 9, "align": "center"},
         "RefNegar": {"based_on": "BaseNegar", "size": 11, "align": "both",
                      "after": 4, "left_cm": 0.5, "hanging_cm": 0.5},
+        "ّّFootnoteTextFa": {"based_on": "BaseNegar", "size": 8, "align": "right"},
+        "FootnoteTextEn": {"based_on": "BaseNegar", "size": 8, "align": "left"},
     },
 }
