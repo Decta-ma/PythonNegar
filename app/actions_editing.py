@@ -139,7 +139,22 @@ class EditingActions:
 
     # ------------------------------------------------------------ قواعد CSV
     def half_space_action(self):
-        self._run_rule_group("half_space", "نیم‌فاصله‌گذاری")
+        """اجرای اصلاح نیم‌فاصله روی متن اصلی و بخش‌های انتخاب‌شده."""
+
+        include_footnotes = self._is_editing_option_enabled(
+            "footnotes"
+        )
+
+        include_headers_footers = self._is_editing_option_enabled(
+            "headers_footers"
+        )
+
+        self._run_rule_group(
+            "half_space",
+            "نیم‌فاصله‌گذاری",
+            include_footnotes=include_footnotes,
+            include_headers_footers=include_headers_footers,
+        )
 
     def punctuation_action(self):
         self._run_rule_group("punctuation", "نشانه‌گذاری (سجاوندی)")
@@ -203,7 +218,13 @@ class EditingActions:
                 parent=self,
             )
             
-    def _run_rule_group(self, group, title):
+    def _run_rule_group(
+        self,
+        group,
+        title,
+        include_footnotes=False,
+        include_headers_footers=False,
+    ):
         """اجرای قواعد CSV روی انتخاب کاربر یا کل سند."""
 
         if getattr(self, "_rules_running", False):
@@ -218,6 +239,61 @@ class EditingActions:
             if doc is None:
                 self._restore_connected_status()
                 return
+            
+                        # محدوده‌های اضافی که باید در کنار متن اصلی بررسی شوند.
+            extra_ranges = []
+
+            # --------------------------------------------------------
+            # پانویس‌ها
+            # --------------------------------------------------------
+
+            if include_footnotes:
+                try:
+                    for index in range(1, doc.Footnotes.Count + 1):
+                        footnote = doc.Footnotes(index)
+                        extra_ranges.append(
+                            footnote.Range.Duplicate
+                        )
+                except Exception:
+                    pass
+
+            # --------------------------------------------------------
+            # سرصفحه و پاصفحه
+            # --------------------------------------------------------
+
+            if include_headers_footers:
+                try:
+                    for section_index in range(
+                        1,
+                        doc.Sections.Count + 1,
+                    ):
+                        section = doc.Sections(section_index)
+
+                        # 1 = اول
+                        # 2 = زوج
+                        # 3 = فرد
+                        for story_type in (1, 2, 3):
+                            try:
+                                header = section.Headers(story_type)
+
+                                if header.Exists:
+                                    extra_ranges.append(
+                                        header.Range.Duplicate
+                                    )
+                            except Exception:
+                                pass
+
+                            try:
+                                footer = section.Footers(story_type)
+
+                                if footer.Exists:
+                                    extra_ranges.append(
+                                        footer.Range.Duplicate
+                                    )
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
 
             ruleset = load_group(group)
 
@@ -234,6 +310,7 @@ class EditingActions:
                 undo_name=title,
                 progress=progress,
                 target_range=target_range,
+                target_ranges=extra_ranges,
             )
 
             self._restore_connected_status()
@@ -312,4 +389,19 @@ class EditingActions:
                 str(e),
                 parent=self,
             )
+    
+    def _is_editing_option_enabled(self, key):
+        """بررسی فعال بودن یک گزینه از تنظیمات ویراستاری."""
+
+        controls = getattr(self, "editing_settings_controls", {})
+
+        control = controls.get(key)
+
+        if control is None:
+            return False
+
+        try:
+            return bool(control.get())
+        except Exception:
+            return False
 

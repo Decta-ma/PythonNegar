@@ -97,20 +97,42 @@ def apply_rules(
     progress=None,
     save=True,
     target_range=None,
+    target_ranges=None,
 ):
-    """قواعد را به ترتیب روی سند متصل اعمال می‌کند و ReplaceReport برمی‌گرداند.
+    """قواعد را به ترتیب روی یک یا چند محدوده از سند اعمال می‌کند و ReplaceReport برمی‌گرداند.
 
     progress(done, total): پس از هر قاعده صدا زده می‌شود (برای نوار وضعیت).
     """
+
     doc = engine.ensure_ready()
     word = engine.word
     report = ReplaceReport()
+
     total_rules = len(rules)
+
     if total_rules == 0:
         return report
 
+    # ------------------------------------------------------------
+    # ساخت لیست محدوده‌هایی که باید روی آن‌ها عملیات انجام شود
+    # ------------------------------------------------------------
+
+    ranges = []
+
+    if target_range is not None:
+        ranges.append(target_range)
+
+    if target_ranges:
+        ranges.extend(target_ranges)
+
+    # اگر هیچ محدوده‌ای مشخص نشده باشد، کل سند اصلی
+    # مثل رفتار قبلی عمل می‌کنیم.
+    if not ranges:
+        ranges = [None]
+
     # همهٔ تغییرات یک مرحلهٔ Undo شوند
     undo = None
+
     try:
         undo = word.UndoRecord
         undo.StartCustomRecord(undo_name)
@@ -119,6 +141,7 @@ def apply_rules(
 
     # خاموش‌کردن بازتولید صفحه، سرعت را چند برابر می‌کند
     old_updating = None
+
     try:
         old_updating = word.ScreenUpdating
         word.ScreenUpdating = False
@@ -126,26 +149,29 @@ def apply_rules(
         old_updating = None
 
     current = None
-    
+
     try:
         for index, rule in enumerate(rules, start=1):
             current = rule
 
-            matches = _count_matches(
-                doc,
-                rule,
-                target_range,
-            )
+            # یک قاعده باید روی تمام محدوده‌های تعیین‌شده اجرا شود
+            for current_range in ranges:
 
-            if matches:
-                _replace_all(
+                matches = _count_matches(
                     doc,
                     rule,
-                    target_range,
+                    current_range,
                 )
 
-                report.total += matches
-                report.details.append((rule, matches))
+                if matches:
+                    _replace_all(
+                        doc,
+                        rule,
+                        current_range,
+                    )
+
+                    report.total += matches
+                    report.details.append((rule, matches))
 
             report.rules_run = index
 
@@ -154,16 +180,25 @@ def apply_rules(
 
         if report.total > 0 and save:
             doc.Save()
-            
+
     except Exception as exc:
-        where = f"«{current.search.strip()}»" if current is not None else ""
-        raise RuntimeError(f"خطا هنگام اعمال قاعدهٔ {where}:\n{exc}") from exc
+        where = (
+            f"«{current.search.strip()}»"
+            if current is not None
+            else ""
+        )
+
+        raise RuntimeError(
+            f"خطا هنگام اعمال قاعدهٔ {where}:\n{exc}"
+        ) from exc
+
     finally:
         if old_updating is not None:
             try:
                 word.ScreenUpdating = old_updating
             except Exception:
                 pass
+
         if undo is not None:
             try:
                 undo.EndCustomRecord()
