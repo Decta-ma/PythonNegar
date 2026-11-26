@@ -147,7 +147,7 @@ EBTEKAR = {
         "TableTextNegar": {"based_on": "BaseNegar", "size": 9, "align": "center"},
         "RefNegar": {"based_on": "BaseNegar", "size": 11, "align": "both",
                      "after": 4, "left_cm": 0.5, "hanging_cm": 0.5},
-        "ّّFootnoteTextFa": {"based_on": "BaseNegar", "size": 8, "align": "right"},
+        "FootnoteTextFa": {"based_on": "BaseNegar", "size": 8, "align": "right"},
         "FootnoteTextEn": {"based_on": "BaseNegar", "size": 8, "align": "left"},
     },
 }
