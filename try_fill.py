@@ -23,5 +23,8 @@ info = ArticleInfo(
 
 engine = WordEngine()
 template = Path("Ebtekar_generated.dotx").resolve()
-engine.create_new_signed_doc(str(Path.home() / "Documents" / "test_fill2.docx"), template)
+engine.create_new_signed_doc(str(Path.home() / "Documents" / "test_fill5.docx"), template)
 fill_document(engine.doc, info)
+
+for i, fn in enumerate(engine.doc.Footnotes, 1):
+    print(i, repr(fn.Range.Text), fn.Range.Font.Size, fn.Range.Font.Color)
