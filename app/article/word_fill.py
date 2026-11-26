@@ -81,19 +81,9 @@ def insert_authors(doc, bookmark_name, authors, english):
         footnote.Range.Text = note
         created.append(footnote)
         pos = footnote.Reference.End
-        footnote = doc.Footnotes.Add(doc.Range(pos, pos))
-        footnote.Range.Text = note
-        created.append(footnote)
-        print("note:", repr(note), "| بعد از Add:", repr(footnote.Range.Text))   # <-- جدید
-        created.append(footnote)
-        pos = footnote.Reference.End
 
     for footnote in created:
         apply_footnote_direction(footnote, english)
-    for footnote in created:
-        apply_footnote_direction(footnote, english)
-        print("بعد از direction:", repr(footnote.Range.Text))                  # <-- جدید
-
 
 def fill_document(doc, info):
     """info: ArticleInfo. بعد از جایگذاری سند ذخیره می‌شود."""
