@@ -6,9 +6,11 @@ TAB = "مقاله‌نگار"
 placeholder(TAB, "قالب پایان‌نامه", "تنظیم ساختار پایان‌نامه", order=10)
 
 
-@card(TAB, "قالب مقاله", "تنظیم ساختار مقاله", order=20)
+@card(TAB, "ساخت مقاله جدید", "تنظیم ساختار مقاله", order=20)
 def article_template(app):
     show_journal_selection(app)
 
 
+placeholder(TAB, "مقاله‌های جاری", "مقاله‌های ثبت‌شده روی سرور", order=21)
+placeholder(TAB, "مقاله‌های بایگانی", "مقاله‌های بایگانی‌شده روی سرور", order=22)
 placeholder(TAB, "قالب گزارش", "تنظیم ساختار گزارش", order=30)
