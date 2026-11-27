@@ -9,18 +9,21 @@ from .. import theme
 from .keyboard_layout import switch_layout
 
 # ---------------------------------------------------------------- رنگ‌ها
-PAGE_BG = "#3C4138"
-CARD_BG = "#464D3F"
-ENTRY_BG = "#33382F"
-ENTRY_BORDER = "#5C6454"
-ERROR = "#F87171"
-ERROR_TEXT = "#FCA5A5"
-TEXT = "#F8FAFC"
-MUTED = "#C2C9BA"
-BUTTON = "#7BA05B"
-BUTTON_HOVER = "#8DB36C"
-BUTTON_TEXT = "#1B1F17"
-RING = "#7C866F"
+# رنگ‌ها از نمونهٔ فرم قبلی (نسخهٔ C#) برداشته شده: صفحهٔ سفید با آبی آسمانی
+ACCENT = "#06AEF4"        # آبی اصلی: نوار بالا، دکمهٔ اصلی
+ACCENT_DARK = "#007AC1"   # آبی تیره: حلقهٔ موج، حاشیه‌ها
+ACCENT_HOVER = "#0597D4"
+ACCENT_SOFT = "#B4E7FC"   # آبی خیلی روشن: خط‌جداکننده و حلقهٔ داخلی موج
+PAGE_BG = "#FFFFFF"
+CARD_BG = "#F2FAFE"
+ENTRY_BG = "#FFFFFF"
+ENTRY_BORDER = "#434343"
+ERROR = "#E53935"
+ERROR_TEXT = "#D32F2F"
+TEXT = "#1F2937"
+MUTED = "#5B6B7A"
+ON_ACCENT = "#FFFFFF"     # رنگ نوشته روی آبی
+RING = ACCENT_DARK
 
 MIN_NAME_LEN = 5
 
@@ -76,7 +79,13 @@ class AuthorBlock(ctk.CTkFrame):
     """کادر اطلاعات یک نویسنده: ستون انگلیسی (چپ) و ستون فارسی (راست)."""
 
     def __init__(self, master, on_remove):
-        super().__init__(master, fg_color=CARD_BG, corner_radius=12)
+        super().__init__(
+            master,
+            fg_color=CARD_BG,
+            corner_radius=12,
+            border_width=1,
+            border_color=ACCENT_SOFT,
+        )
         self.entries = {}
         self.columnconfigure(0, weight=1, uniform="col")
         self.columnconfigure(1, weight=1, uniform="col")
@@ -93,8 +102,9 @@ class AuthorBlock(ctk.CTkFrame):
             width=60,
             height=28,
             font=_font(12),
-            fg_color="#7F1D1D",
-            hover_color="#991B1B",
+            fg_color=ERROR,
+            hover_color="#C62828",
+            text_color=ON_ACCENT,
             command=lambda: on_remove(self),
         ).pack(side="left")
 
@@ -130,14 +140,15 @@ class ArticlePage(ctk.CTkFrame):
         self.on_submit = on_submit
         self.blocks = []
 
-        top = ctk.CTkFrame(self, fg_color="transparent")
-        top.pack(fill="x", padx=18, pady=(14, 0))
+        top = ctk.CTkFrame(self, fg_color=ACCENT, corner_radius=0, height=58)
+        top.pack(fill="x")
+        top.pack_propagate(False)
         ctk.CTkLabel(
             top,
             text=f"اطلاعات مقاله | {journal['name']}",
             font=_font(17, True),
-            text_color=TEXT,
-        ).pack(side="right")
+            text_color=ON_ACCENT,
+        ).pack(side="right", padx=18)
         ctk.CTkButton(
             top,
             text="بازگشت",
@@ -146,36 +157,36 @@ class ArticlePage(ctk.CTkFrame):
             font=_font(12),
             fg_color="transparent",
             border_width=1,
-            border_color=RING,
-            hover_color=CARD_BG,
-            text_color=TEXT,
+            border_color=ON_ACCENT,
+            hover_color=ACCENT_DARK,
+            text_color=ON_ACCENT,
             command=self.go_back,
-        ).pack(side="left")
+        ).pack(side="left", padx=18)
 
         box_fa, self.title_fa = _field(self, "عنوان فارسی مقاله", "fa")
-        box_fa.pack(fill="x", padx=18, pady=(12, 0))
+        box_fa.pack(fill="x", padx=18, pady=(14, 0))
         box_en, self.title_en = _field(self, "Article title (English)", "en")
         box_en.pack(fill="x", padx=18, pady=(8, 0))
 
-               # نوار پایین اول pack می‌شود تا هیچ‌وقت زیر لبهٔ پنجره نرود
+        # نوار پایین اول pack می‌شود تا هیچ‌وقت زیر لبهٔ پنجره نرود
         bottom = ctk.CTkFrame(self, fg_color="transparent")
         bottom.pack(side="bottom", fill="x", padx=18, pady=10)
         ctk.CTkButton(
             bottom,
             text="ساخت مقاله",
             font=_font(14, True),
-            fg_color=BUTTON,
-            hover_color=BUTTON_HOVER,
-            text_color=BUTTON_TEXT,
+            fg_color=ACCENT,
+            hover_color=ACCENT_HOVER,
+            text_color=ON_ACCENT,
             command=self.submit,
         ).pack(side="right")
         ctk.CTkButton(
             bottom,
             text="افزودن نویسنده",
             font=_font(13),
-            fg_color=CARD_BG,
-            hover_color=ENTRY_BG,
-            text_color=TEXT,
+            fg_color=ACCENT_SOFT,
+            hover_color="#9ADBF8",
+            text_color=ACCENT_DARK,
             command=self.add_author,
         ).pack(side="left")
         self.error_label = ctk.CTkLabel(
@@ -185,7 +196,10 @@ class ArticlePage(ctk.CTkFrame):
 
         # فهرست نویسنده‌ها هرچه جای باقی‌مانده است را می‌گیرد و خودش اسکرول می‌خورد
         self.authors_frame = ctk.CTkScrollableFrame(self, fg_color="transparent", height=120)
-        self.authors_frame.pack(fill="both", expand=True, padx=12, pady=(10, 0)) 
+        self.authors_frame.pack(fill="both", expand=True, padx=12, pady=(10, 0))
+
+        self.add_author()
+
     # ------------------------------------------------------------- ناوبری
     def go_back(self):
         from .journal_selection import show_journal_selection
@@ -235,6 +249,9 @@ class ArticlePage(ctk.CTkFrame):
         if not self.title_fa.get().strip():
             self.title_fa.configure(border_color=ERROR)
             problems.append("عنوان فارسی مقاله را وارد کنید.")
+
+        if not self.blocks:
+            problems.append("حداقل یک نویسنده لازم است.")
 
         for number, block in enumerate(self.blocks, start=1):
             for key, lang_name in (("name_fa", "فارسی"), ("name_en", "انگلیسی")):
@@ -287,7 +304,7 @@ def show_article_form(app, journal, on_submit):
 
     circle = canvas.create_oval(cx, cy, cx, cy, fill=PAGE_BG, outline="")
     ring = canvas.create_oval(cx, cy, cx, cy, outline=RING, width=3)
-    ring2 = canvas.create_oval(cx, cy, cx, cy, outline=CARD_BG, width=2)
+    ring2 = canvas.create_oval(cx, cy, cx, cy, outline=ACCENT_SOFT, width=2)
 
     max_radius = math.hypot(max(cx, width - cx), max(cy, height - cy)) + 20
     steps, delay = 30, 15
