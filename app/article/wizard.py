@@ -1,10 +1,33 @@
-from dataclasses import dataclass
-from app.article.models import Author
+from app.article.models import Author, Affiliation, ArticleInfo
 
-@dataclass
-def build_author_list(form):
+def build_author(form):
     return Author(
-        name_fa = form.get("name_fa", "").strip(),
-        name_En = form.get("name_en", "").strip(),
-        email = form.get("email", "").strip()
+        name_fa=form.get("name_fa", "").strip(),
+        name_en=form.get("name_en", "").strip(),
+        email=form.get("email", "").strip(),
+        affiliation=build_affiliation(form)
+    )
+
+
+def build_affiliation(form):
+    return Affiliation(
+        degree_fa=form.get("degree_fa", "").strip(),
+        degree_en=form.get("degree_en", "").strip(),
+        group_fa=form.get("group_fa", "").strip(),
+        group_en=form.get("group_en", "").strip(),
+        faculty_fa=form.get("faculty_fa", "").strip(),
+        faculty_en=form.get("faculty_en", "").strip(),
+        university_fa=form.get("university_fa", "").strip(),
+        university_en=form.get("university_en", "").strip(),
+        city_fa=form.get("city_fa", "").strip(),
+        city_en=form.get("city_en", "").strip()
+    )
+
+
+def build_article_info(form):
+    return ArticleInfo(
+        journal_id=form.get("journal_id", "").strip(),
+        title_fa=form.get("title_fa", "").strip(),
+        title_en=form.get("title_en", "").strip(),
+        authors=[build_author(m) for m in form.get("authors", [])]
     )
