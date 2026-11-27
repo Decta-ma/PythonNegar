@@ -1,4 +1,5 @@
 from app.article.models import Author, Affiliation, ArticleInfo
+from app.article.word_fill import fill_document
 
 def build_author(form):
     return Author(
@@ -31,3 +32,10 @@ def build_article_info(form):
         title_en=form.get("title_en", "").strip(),
         authors=[build_author(m) for m in form.get("authors", [])]
     )
+
+def create_article(engine, form, out_path, template_path):
+    """از دیکشنری فرم، سند Word می‌سازد و پر می‌کند. نام سند را برمی‌گرداند."""
+    info = build_article_info(form)
+    doc_name = engine.create_new_signed_doc(out_path, template_path=str(template_path))
+    fill_document(engine.doc, info)
+    return doc_name

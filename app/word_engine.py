@@ -32,6 +32,14 @@ except ImportError:  # اجرا به‌صورت اسکریپت مستقل
     )
     from app.security import build_token, create_signature, get_device_guid, verify_token
 
+def _is_alive(word):
+    """True اگر ارتباط با این نمونهٔ Word هنوز برقرار باشد."""
+    try:
+        word.Documents.Count
+        return True
+    except Exception:
+        return False
+
 
 class WordEngine:
     """رانندهٔ COM ورد همراه با سیستم امضای اسناد (مطابق home-(2).py)."""
@@ -40,27 +48,30 @@ class WordEngine:
         self.word = None
         self.doc = None
 
-    # ---------------------------------------------------------------- اتصال به ورد
     def get_word_app(self, start_if_missing=False):
-        """اتصال به نمونهٔ فعال ورد یا اجرای نمونهٔ جدید."""
-        if self.word is not None:
-            try:
-                _ = self.word.Documents.Count
-                return self.word
-            except Exception:
-                self.word = None
-                self.doc = None
+        """اتصال به نمونهٔ سالم Word، یا اجرای نمونهٔ جدید."""
+        if self.word is not None and _is_alive(self.word):
+            return self.word
+        self.word = None
+        self.doc = None
 
         try:
-            self.word = win32com.client.GetActiveObject("Word.Application")
+            word = win32com.client.GetActiveObject("Word.Application")
+            if not _is_alive(word):
+                word = None  # نمونهٔ مرده؛ نادیده گرفته می‌شود
         except pywintypes.com_error:
+            word = None
+
+        if word is None:
             if not start_if_missing:
                 raise RuntimeError("هیچ برنامهٔ Word فعالی یافت نشد!") from None
-            self.word = win32com.client.DispatchEx("Word.Application")
+            word = win32com.client.DispatchEx("Word.Application")
 
-        self.word.Visible = True
-        return self.word
+        word.Visible = True
+        self.word = word
+        return word
 
+    
     # ---------------------------------------------------------------- امضا
     def set_doc_signature(self, doc, file_name: str, doc_id: str = None):
         """تولید و ثبت امضای وابسته به نام فایل و شناسهٔ سیستم."""

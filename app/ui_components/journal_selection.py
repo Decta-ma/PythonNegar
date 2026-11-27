@@ -8,7 +8,7 @@ import customtkinter as ctk
 
 from ..journals.manager import get_journals
 from ..journals.template_builder import build_template
-
+from ..article.wizard import create_article
 
 def show_journal_selection(app):
     """فهرست نشریه‌ها را داخل محتوای پنجرهٔ اصلی نشان می‌دهد."""
@@ -67,7 +67,22 @@ def show_journal_selection(app):
 
 
 def create_journal_article(app, journal):
-    """سند Word جدید را با قالب نشریهٔ انتخاب‌شده می‌سازد."""
+    """اول فرم اطلاعات مقاله را نشان می‌دهد؛ با تأیید فرم، سند ساخته می‌شود."""
+    from .article_form import show_article_form
+
+    show_article_form(
+        app, journal, on_submit=lambda form: build_article_document(app, journal, form)
+    )
+
+def safe_filename(text, fallback="Article", max_len=80):
+    """عنوان مقاله را به اسم فایل مجاز ویندوز تبدیل می‌کند."""
+    name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', " ", text)
+    name = re.sub(r"\s+", " ", name).strip(" .")
+    return name[:max_len].strip(" .") or fallback
+
+
+def build_article_document(app, journal, form):
+    """سند Word را از قالب نشریه می‌سازد و با اطلاعات فرم پر می‌کند."""
 
     safe_id = re.sub(
         r"[^A-Za-z0-9_-]+", "_", str(journal["id"])
@@ -76,7 +91,7 @@ def create_journal_article(app, journal):
     output_path = filedialog.asksaveasfilename(
         parent=app,
         title="ذخیره مقاله جدید",
-        initialfile=f"Article_{safe_id}.docx",
+        initialfile=f"{safe_filename(form['title_fa'], f'Article_{safe_id}')}.docx",
         defaultextension=".docx",
         filetypes=[("Word Document", "*.docx")],
     )
@@ -90,18 +105,16 @@ def create_journal_article(app, journal):
 
         build_template(journal, template_path)
 
-        doc_name = app.engine.create_new_signed_doc(
-            output_path, template_path=str(template_path)
-        )
+        doc_name = create_article(app.engine, form, output_path, template_path)
 
         app.update_status(
-            "مقاله ساخته و به ورد متصل شد.",
+            "مقاله ساخته و پر شد.",
             is_connected=True,
             doc_name=doc_name,
         )
         messagebox.showinfo(
             "ساخت سند",
-            f"سند مقاله با قالب «{journal['name']}» ساخته شد.",
+            f"سند مقاله با قالب «{journal['name']}» ساخته و پر شد.",
             parent=app,
         )
     except Exception as exc:
