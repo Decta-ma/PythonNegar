@@ -37,8 +37,10 @@ def style_xml(style_id, s):
     p = []                                         # paragraph properties
     if s.get("keep_next"):
         p.append("<w:keepNext/>")
-    if "before" in s or "after" in s:
+    if "before" in s or "after" in s or "line" in s:
         attrs = ""
+        if "line" in s:                            # multiplier, e.g. 1.2
+            attrs += f' w:line="{int(round(s["line"] * 240))}" w:lineRule="auto"'
         if "before" in s:
             attrs += f' w:before="{pt_to_twips(s["before"])}"'
         if "after" in s:
@@ -59,12 +61,19 @@ def style_xml(style_id, s):
         p.append(f'<w:outlineLvl w:val="{s["outline"]}"/>')
 
     r = []                                         # run (font) properties
-    if "font_cs" in s:
+    if "font" in s:                                # one font for everything
+        fn = escape(s["font"])
+        r.append(f'<w:rFonts w:ascii="{fn}" w:hAnsi="{fn}" w:eastAsia="{fn}" w:cs="{fn}"/>')
+    elif "font_cs" in s:
         r.append(f'<w:rFonts w:cs="{escape(s["font_cs"])}"/>')
-    if s.get("bold"):
+    if s.get("bold") is False:
+        r.append('<w:b w:val="0"/><w:bCs w:val="0"/>')
+    elif s.get("bold"):
         r.append("<w:b/><w:bCs/>")
     if s.get("italic"):
         r.append("<w:i/><w:iCs/>")
+    if "color" in s:
+        r.append(f'<w:color w:val="{s["color"]}"/>')
     if "size" in s:
         hp = half_points(s["size"])
         r.append(f'<w:sz w:val="{hp}"/><w:szCs w:val="{hp}"/>')
@@ -112,12 +121,12 @@ def styles_xml(cfg):
 
 
 # ---------------------------------------------------------------- header / footer
-def _header_paragraph(text, size, bold=False, border=False):
+def _header_paragraph(text, size, bold=False, border=False, rtl=True):
     hp = half_points(size)
-    rpr = f'<w:rPr>{"<w:b/><w:bCs/>" if bold else ""}<w:sz w:val="{hp}"/><w:szCs w:val="{hp}"/><w:rtl/></w:rPr>'
+    rpr = f'<w:rPr>{"<w:b/><w:bCs/>" if bold else ""}<w:sz w:val="{hp}"/><w:szCs w:val="{hp}"/>{"<w:rtl/>" if rtl else ""}</w:rPr>'
     pbdr = ('<w:pBdr><w:bottom w:val="single" w:sz="6" w:space="1" w:color="000000"/></w:pBdr>'
             if border else "")
-    return (f'<w:p><w:pPr><w:pStyle w:val="Header"/>{pbdr}<w:bidi/></w:pPr>'
+    return (f'<w:p><w:pPr><w:pStyle w:val="Header"/>{pbdr}{"<w:bidi/>" if rtl else ""}</w:pPr>'
             f'<w:r>{rpr}<w:t xml:space="preserve">{escape(text)}</w:t></w:r></w:p>')
 
 
@@ -135,9 +144,13 @@ def _page_number_paragraph(size):
 def header_xml(cfg, kind):
     """kind: 'odd' (default), 'even', 'first'. Only odd has text, like the original."""
     h = cfg["header"]
-    if kind == "odd":
-        body = (_header_paragraph(h["line1"], h["size"], bold=True) +
-                _header_paragraph(h["line2"], h["size"], border=h["border"]))
+    rtl = cfg["page"]["rtl"]
+    if h.get("per_kind"):   # first page: journal line; other pages: running title
+        text = h["line1"] if kind == "first" else h["line2"]
+        body = _header_paragraph(text, h["size"], border=h["border"], rtl=rtl)
+    elif kind == "odd":
+        body = (_header_paragraph(h["line1"], h["size"], bold=True, rtl=rtl) +
+                _header_paragraph(h["line2"], h["size"], border=h["border"], rtl=rtl))
     else:
         body = '<w:p><w:pPr><w:pStyle w:val="Header"/></w:pPr></w:p>'
     return f"{XML_HEAD}<w:hdr {ROOT_ATTRS}>{body}</w:hdr>"
@@ -247,7 +260,8 @@ def skeleton_xml(cfg):
         if isinstance(item, dict):
             out += table_xml(item["table"], ids)
         else:
-            out += paragraph_xml(item[0], item[1], item[2] if len(item) > 2 else None, ids)
+            opts = {"rtl": cfg["page"]["rtl"], **(item[2] if len(item) > 2 else {})}
+            out += paragraph_xml(item[0], item[1], opts, ids)
     return out
 
 
