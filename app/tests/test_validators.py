@@ -59,3 +59,13 @@ def test_two_responsible():
                     email="b@mail.com", is_responsible=True)
     assert validate_authors(b, others=[a]) == ["قبلاً یک نویسنده مسئول ثبت شده است."]
     
+
+@pytest.mark.parametrize("text, expected", [
+    ("0000-0002-1825-0097", "0000-0002-1825-0097"),
+    ("https://orcid.org/0000000218250097", "0000-0002-1825-0097"),
+    ("0000 0002 1825 009x", "0000-0002-1825-009X"),
+    ("123", None),
+    ("", None),
+])
+def test_normalize_orcid(text, expected):
+    assert normalize_orcid(text) == expected
