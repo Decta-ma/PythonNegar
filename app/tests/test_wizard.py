@@ -21,3 +21,7 @@ def test_build_author_defaults():
     assert author.orcid == ""
     assert author.is_responsible is False
     assert author.affiliation.university_type is None
+
+def test_build_author_keeps_invalid_orcid():
+    author = build_author({"name_fa": "الف", "name_en": "A", "orcid": "123"})
+    assert author.orcid == "123"

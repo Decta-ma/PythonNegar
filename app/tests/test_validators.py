@@ -1,4 +1,6 @@
 import pytest
+from app.article.models import Author
+from app.article.validators import validate_authors
 
 from app.article.validators import (
         validate_required_text, 
@@ -24,31 +26,36 @@ def test_validate_email(email, expected):
     assert validate_email(email) == expected
 
 
+def make_author(**kwargs):
+    base = {"name_fa": "علی رضایی", "name_en": "Ali Rezaei"}
+    base.update(kwargs)
+    return Author(**base)
 
-def validate_authors(authors, others=()):
-    """نویسنده را بررسی می‌کند. خروجی: لیست پیام‌های خطا (خالی یعنی سالم)."""
-    errors = []
 
-    for label, value in (("نام نویسنده", authors.name_fa),
-                         ("نام انگلیسی نویسنده", authors.name_en)):
-        msg = validate_required_text(value)
-        if msg:
-            errors.append(f"{label}: {msg}")
+def test_validate_author_ok():
+    assert validate_authors(make_author()) == []
 
-    msg = validate_email(authors.email, required=authors.is_responsible)
-    if msg:
-        errors.append(msg)
 
-    if authors.orcid and normalize_orcid(authors.orcid) is None:
-        errors.append("شناسه ارکید معتبر نیست. قالب صحیح: 0000-0000-0000-0000")
+def test_responsible_needs_email():
+    assert validate_authors(make_author(is_responsible=True)) == ["ایمیل الزامی است"]
 
-    others = [o for o in others if o is not authors]
 
-    email = authors.email.strip().lower()
-    if email and any(o.email.strip().lower() == email for o in others):
-        errors.append("این ایمیل قبلاً برای نویسنده دیگری ثبت شده است.")
+def test_invalid_orcid():
+    errors = validate_authors(make_author(orcid="123"))
+    assert len(errors) == 1 and "ارکید" in errors[0]
 
-    if authors.is_responsible and any(o.is_responsible for o in others):
-        errors.append("قبلاً یک نویسنده مسئول ثبت شده است.")
 
-    return errors
+def test_duplicate_email():
+    a = make_author(email="ali@mail.com")
+    b = make_author(name_fa="رضا احمدی", name_en="Reza Ahmadi", email="ALI@mail.com")
+    assert validate_authors(b, others=[a]) == [
+        "این ایمیل قبلاً برای نویسنده دیگری ثبت شده است."
+    ]
+
+
+def test_two_responsible():
+    a = make_author(email="a@mail.com", is_responsible=True)
+    b = make_author(name_fa="رضا احمدی", name_en="Reza Ahmadi",
+                    email="b@mail.com", is_responsible=True)
+    assert validate_authors(b, others=[a]) == ["قبلاً یک نویسنده مسئول ثبت شده است."]
+    

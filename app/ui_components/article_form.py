@@ -8,6 +8,9 @@ import customtkinter as ctk
 from .. import theme
 from .keyboard_layout import switch_layout
 
+from ..article.validators import validate_authors, validate_required_text
+from ..article.wizard import build_author
+
 # ---------------------------------------------------------------- رنگ‌ها
 # رنگ‌ها از نمونهٔ فرم قبلی (نسخهٔ C#) برداشته شده: صفحهٔ سفید با آبی آسمانی
 ACCENT = "#06AEF4"        # آبی اصلی: نوار بالا، دکمهٔ اصلی
@@ -25,10 +28,6 @@ MUTED = "#5B6B7A"
 ON_ACCENT = "#FFFFFF"     # رنگ نوشته روی آبی
 RING = ACCENT_DARK
 
-MIN_NAME_LEN = 5
-
-# (پیشوند کلید فرم، برچسب فارسی، برچسب انگلیسی). کلیدها با build_author و
-# build_affiliation یکی‌اند؛ مثلاً "degree" دو کلید degree_fa و degree_en می‌سازد.
 _UNIVERSITY_TYPES = {"آزاد": "azad", "دولتی": "dolati"}
 _AUTHOR_ROWS = [
     ("name", "نام", "Name"),
@@ -39,6 +38,8 @@ _AUTHOR_ROWS = [
     ("city", "شهر", "City"),
 ]
 
+# (پیشوند کلید فرم، برچسب فارسی، برچسب انگلیسی). کلیدها با build_author و
+# build_affiliation یکی‌اند؛ مثلاً "degree" دو کلید degree_fa و degree_en می‌سازد.
 
 def _font(size=13, bold=False):
     return ctk.CTkFont(
@@ -277,15 +278,17 @@ class ArticlePage(ctk.CTkFrame):
         if not self.blocks:
             problems.append("حداقل یک نویسنده لازم است.")
 
-        for number, block in enumerate(self.blocks, start=1):
-            for key, lang_name in (("name_fa", "فارسی"), ("name_en", "انگلیسی")):
+        authors = []
+        for block in self.blocks:
+            for key in ("name_fa", "name_en"):
                 entry = block.entries[key]
-                if len(entry.get().strip()) < MIN_NAME_LEN:
+                if validate_required_text(entry.get()):
                     entry.configure(border_color=ERROR)
-                    problems.append(
-                        f"نویسنده {number}: نام {lang_name} باید حداقل "
-                        f"{MIN_NAME_LEN} کاراکتر باشد."
-                    )
+            authors.append(build_author(block.get()))
+
+        for number, author in enumerate(authors, start=1):
+            for message in validate_authors(author, others=authors):
+                problems.append(f"نویسنده {number}: {message}")
 
         if problems:
             extra = f"  (+{len(problems) - 1} مورد دیگر)" if len(problems) > 1 else ""
