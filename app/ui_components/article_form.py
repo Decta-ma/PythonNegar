@@ -29,6 +29,7 @@ MIN_NAME_LEN = 5
 
 # (پیشوند کلید فرم، برچسب فارسی، برچسب انگلیسی). کلیدها با build_author و
 # build_affiliation یکی‌اند؛ مثلاً "degree" دو کلید degree_fa و degree_en می‌سازد.
+_UNIVERSITY_TYPES = {"آزاد": "azad", "دولتی": "dolati"}
 _AUTHOR_ROWS = [
     ("name", "نام", "Name"),
     ("degree", "مرتبه علمی", "Degree"),
@@ -118,16 +119,39 @@ class AuthorBlock(ctk.CTkFrame):
 
         box_email, entry_email = _field(self, "Email", "en")
         box_email.grid(
-            row=len(_AUTHOR_ROWS) + 1, column=0, sticky="ew", padx=(12, 6), pady=(4, 12)
+            row=len(_AUTHOR_ROWS) + 1, column=0, sticky="ew", padx=(12, 6), pady=4
         )
         self.entries["email"] = entry_email
+
+        box_orcid, entry_orcid = _field(self, "ORCID", "en")
+        box_orcid.grid(
+            row=len(_AUTHOR_ROWS) + 1, column=1, sticky="ew", padx=(6, 12), pady=4
+        )
+        self.entries["orcid"] = entry_orcid
+
+        options = ctk.CTkFrame(self, fg_color="transparent")
+        options.grid(
+            row=len(_AUTHOR_ROWS) + 2, column=0, columnspan=2,
+            sticky="ew", padx=12, pady=(4, 12),
+        )
+        self.university_type = ctk.CTkSegmentedButton(
+            options, values=list(_UNIVERSITY_TYPES), font=_font(12)
+        )
+        self.university_type.pack(side="right")
+        self.is_responsible = ctk.CTkCheckBox(
+            options, text="نویسندهٔ مسئول", font=_font(12), text_color=TEXT
+        )
+        self.is_responsible.pack(side="left")
 
     def set_number(self, number):
         self.title_label.configure(text=f"نویسنده {number}")
 
     def get(self):
         """دیکشنری خام این نویسنده؛ همان ورودی build_author."""
-        return {key: entry.get() for key, entry in self.entries.items()}
+        data = {key: entry.get() for key, entry in self.entries.items()}
+        data["university_type"] = _UNIVERSITY_TYPES.get(self.university_type.get(), "")
+        data["is_responsible"] = bool(self.is_responsible.get())
+        return data
 
 
 class ArticlePage(ctk.CTkFrame):

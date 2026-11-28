@@ -1,17 +1,28 @@
-from app.article.models import Author, Affiliation, ArticleInfo
+from app.article.models import Author, Affiliation, ArticleInfo, UniversityType
+from app.article.validators import normalize_orcid
 from app.article.word_fill import fill_document
+
+def build_university_type(value):
+    value = (value or "").strip()
+    if not value:
+        return None
+    return UniversityType(value)
+
 
 def build_author(form):
     return Author(
         name_fa=form.get("name_fa", "").strip(),
         name_en=form.get("name_en", "").strip(),
         email=form.get("email", "").strip(),
+        orcid=normalize_orcid(form.get("orcid", "")) or "",
+        is_responsible=bool(form.get("is_responsible", False)),
         affiliation=build_affiliation(form)
     )
 
 
 def build_affiliation(form):
     return Affiliation(
+        university_type=build_university_type(form.get("university_type", "")),
         degree_fa=form.get("degree_fa", "").strip(),
         degree_en=form.get("degree_en", "").strip(),
         group_fa=form.get("group_fa", "").strip(),
