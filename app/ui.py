@@ -28,6 +28,7 @@ except ImportError:  # اجرا به‌صورت اسکریپت مستقل
 
 import traceback
 import customtkinter as ctk
+import tkinter as tk
 import pythoncom
 
 # ثبت همهٔ کارت‌ها (هر فایل در app/features/ خودش را ثبت می‌کند)
@@ -99,8 +100,47 @@ class LuxuryWordAssistant(
         ).pack(anchor="e", padx=18, pady=(0, 12))
 
         # نوار تب‌های اصلی
-        self.tabs_frame = ctk.CTkFrame(root, fg_color=self.panel, corner_radius=12)
-        self.tabs_frame.pack(fill="x", padx=18, pady=(0, 10))
+        
+
+                # نوار تب‌های اصلی: دو فلش کنار ناحیهٔ قابل‌جابه‌جایی
+        tabs_bar = ctk.CTkFrame(root, fg_color=self.panel, corner_radius=12)
+        tabs_bar.pack(fill="x", padx=18, pady=(0, 10))
+        tabs_bar.grid_columnconfigure(0, minsize=34)
+        tabs_bar.grid_columnconfigure(1, weight=1)
+        tabs_bar.grid_columnconfigure(2, minsize=34)
+
+        self.tabs_canvas = tk.Canvas(
+            tabs_bar, bg=self.panel, height=56, highlightthickness=0, bd=0
+        )
+        self.tabs_canvas.grid(row=0, column=1, sticky="ew")
+
+        self.tabs_frame = ctk.CTkFrame(
+            self.tabs_canvas, fg_color=self.panel, corner_radius=0
+        )
+        self._tabs_window = self.tabs_canvas.create_window(
+            0, 0, window=self.tabs_frame, anchor="nw"
+        )
+
+        arrow_style = dict(
+            width=28,
+            height=42,
+            corner_radius=9,
+            font=ctk.CTkFont(size=22),
+            fg_color="transparent",
+            hover_color=self.blue_hover,
+            text_color=self.text,
+        )
+        self.tabs_left = ctk.CTkButton(
+            tabs_bar, text="‹", command=lambda: self._scroll_tabs(-1), **arrow_style
+        )
+        self.tabs_left.grid(row=0, column=0)
+        self.tabs_right = ctk.CTkButton(
+            tabs_bar, text="›", command=lambda: self._scroll_tabs(1), **arrow_style
+        )
+        self.tabs_right.grid(row=0, column=2)
+
+        self.tabs_canvas.bind("<Configure>", self._layout_tabs)
+        self.tabs_frame.bind("<Configure>", self._layout_tabs)
 
         self.tab_names = list(registry.TAB_NAMES)
         self.tab_buttons = {}
@@ -156,6 +196,7 @@ class LuxuryWordAssistant(
         ).pack(anchor="e")
 
         self.show_tab("مقاله‌نگار")
+        self.after(100, lambda: (self.tabs_canvas.xview_moveto(1.0), self._update_tab_arrows()))
         self.update_status("وضعیت: سندی متصل نیست", is_connected=False)
 
     # ------------------------------------------------------------ وضعیت اتصال
@@ -186,6 +227,35 @@ class LuxuryWordAssistant(
         color = "#22C55E" if self._status_led_bright else "#065F46"
         self.status_dot.configure(text_color=color)
         self._status_after_id = self.after(700, self._pulse_status_led)
+
+
+        # --------------------------------------------------------- نوار تب‌ها
+    def _layout_tabs(self, event=None):
+        """محدودهٔ اسکرول را تنظیم می‌کند و تب‌ها را راست‌چین نگه می‌دارد."""
+        canvas_w = self.tabs_canvas.winfo_width()
+        inner_w = self.tabs_frame.winfo_reqwidth()
+        total = max(canvas_w, inner_w)
+        self.tabs_canvas.configure(scrollregion=(0, 0, total, 56))
+        self.tabs_canvas.coords(self._tabs_window, total - inner_w, 0)
+        self._update_tab_arrows()
+
+    def _scroll_tabs(self, direction):
+        """direction: -1 به چپ، +1 به راست؛ هر کلیک دو سوم عرض نوار."""
+        first, last = self.tabs_canvas.xview()
+        self.tabs_canvas.xview_moveto(first + direction * (last - first) * 0.66)
+        self._update_tab_arrows()
+
+    def _update_tab_arrows(self):
+        """هر فلش فقط وقتی دیده می‌شود که آن طرف تب پنهان داشته باشیم."""
+        first, last = self.tabs_canvas.xview()
+        if first > 0.002:
+            self.tabs_left.grid()
+        else:
+            self.tabs_left.grid_remove()
+        if last < 0.998:
+            self.tabs_right.grid()
+        else:
+            self.tabs_right.grid_remove()
 
     # ------------------------------------------------------------------ تب‌ها
     def show_tab(self, tab_name):
