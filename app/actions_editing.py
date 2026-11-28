@@ -393,15 +393,7 @@ class EditingActions:
     def _is_editing_option_enabled(self, key):
         """بررسی فعال بودن یک گزینه از تنظیمات ویراستاری."""
 
-        controls = getattr(self, "editing_settings_controls", {})
+        settings = getattr(self, "editing_settings", {})
 
-        control = controls.get(key)
-
-        if control is None:
-            return False
-
-        try:
-            return bool(control.get())
-        except Exception:
-            return False
+        return bool(settings.get(key, False))
 

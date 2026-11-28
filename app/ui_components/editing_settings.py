@@ -36,11 +36,22 @@ def _add_settings_switch(app, parent, text, key, default=False):
     )
     switch.pack(side="left", padx=8)
 
-    if default:
+    # مقدار ذخیره‌شده را بخوان.
+    # اگر قبلاً مقداری ذخیره نشده بود، از مقدار پیش‌فرض استفاده کن.
+    saved_value = app.editing_settings.get(key, default)
+
+    if saved_value:
         switch.select()
     else:
         switch.deselect()
 
+    # ذخیره مقدار جدید بلافاصله بعد از تغییر Switch
+    def save_switch_value():
+        app.editing_settings[key] = bool(switch.get())
+
+    switch.configure(command=save_switch_value)
+
+    # نگهداری کنترل برای استفاده از بخش‌های دیگر برنامه
     app.editing_settings_controls[key] = switch
 
     return switch
@@ -79,6 +90,10 @@ def show_editing_settings_modal(app):
 
     # نگهداری کنترل‌های تنظیمات
     app.editing_settings_controls = {}
+
+    # نگهداری مقدار تنظیمات در طول اجرای برنامه
+    if not hasattr(app, "editing_settings"):
+        app.editing_settings = {}
 
     # قاب اصلی
     main = ctk.CTkFrame(
@@ -255,7 +270,21 @@ def show_editing_settings_modal(app):
         dynamic_resizing=False,
     )
 
-    poetry_menu.set("به صورت ستونی")
+    # مقدار ذخیره‌شده شیوه شعر
+    saved_poetry_style = app.editing_settings.get(
+        "poetry_style",
+        "به صورت ستونی",
+    )
+
+    poetry_menu.set(saved_poetry_style)
     poetry_menu.pack(fill="x")
+
+    # ذخیره مقدار جدید بلافاصله بعد از تغییر
+    def save_poetry_style(value):
+        app.editing_settings["poetry_style"] = value
+
+    poetry_menu.configure(
+        command=save_poetry_style,
+    )
 
     app.editing_settings_controls["poetry_style"] = poetry_menu
