@@ -10,8 +10,7 @@ def validate_required_text(text):
     if not text:
         return "فیلد نباید خالی باشد"
     if len(text) < MIN_LENGTH:
-        return "حداقل 3 حرف وارد کنید"
-    return None 
+        return f"حداقل {MIN_LENGTH} حرف وارد کنید"
 
 def validate_email(email, required=False):
     email = (email or "").strip()

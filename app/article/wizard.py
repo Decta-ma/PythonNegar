@@ -8,6 +8,9 @@ def build_university_type(value):
         return None
     return UniversityType(value)
 
+def build_orcid(value):
+    value = (value or "").strip()
+    return normalize_orcid(value) or value
 
 def build_author(form):
     return Author(
@@ -52,6 +55,3 @@ def create_article(engine, form, out_path, template_path):
     fill_document(engine.doc, info)
     return doc_name
 
-def build_orcid(value):
-    value = (value or "").strip()
-    return normalize_orcid(value) or value

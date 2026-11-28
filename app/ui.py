@@ -2,7 +2,6 @@
 
 try:  # اجرا به‌صورت پکیج
     from . import features, registry, theme
-    from .config import *  # noqa: F401,F403
     from .word_engine import WordEngine
     from .actions_equation import EquationActions
     from .actions_document import DocumentActions
